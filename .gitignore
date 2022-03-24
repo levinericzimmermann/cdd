@@ -145,3 +145,5 @@ bin/
 parts/
 eggs/
 develop-eggs/
+
+*.epub
