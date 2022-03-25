@@ -1,8 +1,16 @@
+import voxpopuli
+
 __all__ = ("Sylablle", "Word", "Sentence", "Lyrics")
 
 
 class LyricPart(object):
-    pass
+    @property
+    def phoneme_list(self) -> voxpopuli.PhonemeList:
+        return voxpopuli.Voice(lang="pt").to_phonemes(str(self))
+
+    @property
+    def sampa_tuple(self) -> tuple[str, ...]:
+        return tuple(phoneme.name for phoneme in self.phoneme_list)
 
 
 class NestedLyricPart(list, LyricPart):

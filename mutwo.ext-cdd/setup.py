@@ -33,6 +33,8 @@ setuptools.setup(
         "lxml==4.8.0",  # (this is for beautiful soup)
         # for hyphenation of pessoa text (in order to create lyrics)
         "pyphen==0.12.0",
+        # for converting the portuguese lyrics to xsampa phonemes
+        "voxpopuli==0.3.7",
     ],
     extras_require=extras_require,
     python_requires=">=3.9, <4",
