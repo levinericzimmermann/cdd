@@ -24,6 +24,8 @@ PATH.BUILDS.SOUND_FILES = "sound_files"
 PATH.CDD = "cdd"
 PATH.CDD.DATA = "data"
 PATH.CDD.DATA.FADO = "fado"
+PATH.CDD.DATA.PESSOA = "pessoa"
+PATH.CDD.DATA.PESSOA.BOOK = "Livro_do_Desassossego.epub"
 
 
 del os, Path
