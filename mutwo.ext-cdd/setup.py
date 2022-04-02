@@ -21,9 +21,9 @@ setuptools.setup(
     ],
     setup_requires=[],
     install_requires=[
-        "mutwo.ext-core>=0.57.1, <0.58.0",
-        "mutwo.ext-music>=0.10.0, <1.0.0",
-        "mutwo.ext-midi>=0.5.1, <0.6.0",
+        "mutwo.ext-core>=0.58.0, <0.59.0",
+        "mutwo.ext-music>=0.11.1, <1.0.0",
+        "mutwo.ext-midi>=0.6.0, <0.7.0",
         "mutwo.ext-abjad>=0.5.0, <0.6.0",
         "mutwo.ext-ekmelily>=0.5.0, <0.6.0",
         "mutwo.ext-isis>=0.7.0, <0.8.0",
@@ -35,6 +35,8 @@ setuptools.setup(
         "pyphen==0.12.0",
         # for converting the portuguese lyrics to xsampa phonemes
         "voxpopuli==0.3.7",
+        # to pickle pitches
+        "cloudpickle==2.0.0",
     ],
     extras_require=extras_require,
     python_requires=">=3.9, <4",

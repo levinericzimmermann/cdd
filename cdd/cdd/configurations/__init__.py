@@ -2,6 +2,7 @@ import os
 
 CHAPTER_TO_RENDER_TUPLE = tuple([])
 
+
 class Path(str):
     def __setattr__(self, path_name: str, path: str):
         path = f"{str(self)}/{path}"
@@ -20,6 +21,7 @@ PATH.BUILDS.ILLUSTRATIONS = "illustrations"
 PATH.BUILDS.NOTATIONS = "notations"
 PATH.BUILDS.MIDI = "midi"
 PATH.BUILDS.SOUND_FILES = "sound_files"
+PATH.BUILDS.PICKLED = "pickled"
 
 PATH.CDD = "cdd"
 PATH.CDD.DATA = "data"
@@ -27,5 +29,7 @@ PATH.CDD.DATA.FADO = "fado"
 PATH.CDD.DATA.PESSOA = "pessoa"
 PATH.CDD.DATA.PESSOA.BOOK = "Livro_do_Desassossego.epub"
 
+
+FORCE_TO_COMPUTE_FADO = False
 
 del os, Path

@@ -9,7 +9,9 @@ for chapter, content in cdd.constants.CHAPTER_TO_LYRICS_DICT.items():
     print('')
 """
 
-print(cdd.constants.CLARINET_AMBITUS)
-print(cdd.constants.SOPRAN_AMBITUS)
-print(cdd.constants.CLAVICHORD_AMBITUS)
-print(cdd.constants.CLAVICHORD_PITCH_TUPLE)
+# print(cdd.constants.CLARINET_AMBITUS)
+# print(cdd.constants.SOPRAN_AMBITUS)
+# print(cdd.constants.CLAVICHORD_AMBITUS)
+# print(cdd.constants.CLAVICHORD_PITCH_TUPLE)
+
+print(cdd.constants.FADO_EVENT_TUPLE)

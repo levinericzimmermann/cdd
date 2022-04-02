@@ -1,0 +1,18 @@
+Clavichord tuning based on just fifth and just seventh.
+Cent deviation from closest chromatic 12 Equal divided octave scale pitch.
+
+
+ratio       cent deviation     pitch name
+
+1           0.0                a
+28/27       -37.0              ais
+8/7         31.2               h
+7/6         -33.1              c
+9/7         35.1               cis
+4/3         -2.0               d
+112/81      -39.0              dis
+3/2         2.0                e
+14/9        -35.1              f
+12/7        33.1               fis
+7/4         -31.2              g
+27/14       37.0               gis
