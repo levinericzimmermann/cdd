@@ -18,7 +18,8 @@ class LyricsStringToLyrics(core_converters.abc.Converter):
         punctuation: str,
         pyphen_dic,
     ):
-        regex_latin_letter = re.compile(r"[^a-zA-Z\s?]")
+        sentence_string = sentence_string.replace('-', ' ')
+        regex_latin_letter = re.compile(r"[^-/().&' \w]|_")
         hyphen_string = "-"
         if letter_only_sentence_string := regex_latin_letter.sub("", sentence_string):
             word_list = letter_only_sentence_string.split(" ")
@@ -43,7 +44,7 @@ class LyricsStringToLyrics(core_converters.abc.Converter):
     def convert(
         self, lyrics_string: str, language_code: str = "pt"
     ) -> cdd_parameters.NestedLanguageBasedLyric:
-        regex_punctuation = re.compile(r"[\?\.\!\…]")
+        regex_punctuation = re.compile(r"[\?\.\!\…\:\;]")
 
         pyphen_dic = pyphen.Pyphen(lang=language_code)
 
