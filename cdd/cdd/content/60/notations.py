@@ -4,7 +4,7 @@ import cdd
 
 
 def main(chapter: cdd.chapters.Chapter):
-    chapter_to_latex_document = cdd_converters.SilenceChapterToLatexDocument()
+    chapter_to_latex_document = cdd_converters.TextChapterToLatexDocument(chapter.text)
     for (
         instrument_name
     ) in cdd.constants.INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME.keys():

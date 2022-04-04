@@ -18,7 +18,7 @@ class Chapter(cdd_interfaces.abc.Chapter):
         return cdd.constants.CHAPTER_TO_LYRICS_DICT[f"[{self.index}]"]
 
     def get_notation_path(self, instrument_name: str) -> str:
-        return f"{cdd.configurations.PATH.BUILDS.NOTATIONS}/{self.index}_{instrument_name}.pdf"
+        return f"{cdd.configurations.PATH.BUILDS.NOTATIONS}/{self.index}_{instrument_name}"
 
     def get_midi_path(self, instrument_name: str) -> str:
         return (

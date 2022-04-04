@@ -80,3 +80,5 @@ INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {
     "clarinet": "cl.",
     "clavichord": "cv.",
 }
+
+ADDED_INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {"percussion": "perc."}

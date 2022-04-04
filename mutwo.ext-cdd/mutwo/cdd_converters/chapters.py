@@ -7,7 +7,8 @@ from mutwo import core_converters
 
 __all__ = (
     "ChapterToLatexDocument",
-    "SilenceChapterToLatexDocument",
+    "TextChapterToLatexDocument",
+    "ScoreChapterToLatexDocument",
 )
 
 
@@ -58,16 +59,9 @@ class ChapterToLatexDocument(core_converters.abc.Converter):
         return document
 
 
-class SilenceChapterToLatexDocument(ChapterToLatexDocument):
-    text = r"""
-play or don't play a tape of recorded silence.\\
-
-open or don't open a window.\\
-
-keep focused, present, listening to the silence.\\
-
-(up to 4'33; should neither be played at the beginning nor ending of a performance)\\
-"""
+class TextChapterToLatexDocument(ChapterToLatexDocument):
+    def __init__(self, text: str):
+        self.text = text
 
     def convert(
         self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
@@ -101,4 +95,32 @@ keep focused, present, listening to the silence.\\
         latex_document.append(pylatex.NoEscape(r"\vfill"))
         latex_document.append(pessoa_mini_page)
         latex_document.append(pylatex.NoEscape(r"\vfill"))
+        return latex_document
+
+
+class ScoreChapterToLatexDocument(ChapterToLatexDocument):
+    def __init__(self, score_path: str, instruction_text: str = ""):
+        self.instruction_text = instruction_text
+        self.score_path = score_path
+
+    def get_package_name_and_options_tuple(
+        self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
+    ) -> tuple[tuple[str, list[pylatex.NoEscape]], ...]:
+        package_name_and_options_tuple = super().get_package_name_and_options_tuple(
+            chapter_to_convert, instrument_name
+        )
+        return package_name_and_options_tuple + (("graphicx", []),)
+
+    def convert(
+        self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
+    ) -> pylatex.Document:
+        latex_document = super().convert(chapter_to_convert, instrument_name)
+        latex_document.append(pylatex.NoEscape(self.instruction_text))
+        figure = pylatex.Figure(position="h")
+        figure.append(
+            pylatex.NoEscape(
+                r"\includegraphics[width=0.8\textwidth]{" + self.score_path + "}"
+            )
+        )
+        latex_document.append(figure)
         return latex_document

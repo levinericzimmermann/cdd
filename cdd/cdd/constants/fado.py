@@ -34,4 +34,4 @@ def _get_fado_event_tuple(path: str):
     )
 
 
-FADO_EVENT_TUPLE = _get_fado_event_tuple(cdd.configurations.PATH.CDD.DATA.FADO)
+# FADO_EVENT_TUPLE = _get_fado_event_tuple(cdd.configurations.PATH.CDD.DATA.FADO)
