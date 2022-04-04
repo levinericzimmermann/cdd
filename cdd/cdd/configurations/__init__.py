@@ -1,6 +1,6 @@
 import os
 
-CHAPTER_TO_RENDER_TUPLE = tuple([])
+CHAPTER_TO_RENDER_TUPLE = (6,)
 
 
 class Path(str):

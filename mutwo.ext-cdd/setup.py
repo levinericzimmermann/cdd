@@ -35,6 +35,10 @@ setuptools.setup(
         "pyphen==0.12.0",
         # to pickle pitches
         "cloudpickle==2.0.0",
+        # To create score papers
+        "pylatex==1.4.1",
+        # to write portugese numbers
+        "num2words==0.5.10",
     ],
     extras_require=extras_require,
     python_requires=">=3.9, <4",
