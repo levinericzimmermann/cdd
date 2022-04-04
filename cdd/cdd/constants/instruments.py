@@ -10,7 +10,7 @@ def _western_pitch_to_just_intonation_pitch(
     western_pitch: music_parameters.WesternPitch,
 ) -> music_parameters.JustIntonationPitch:
     pitch_interval = WESTERN_PITCH_REFERENCE.get_pitch_interval(western_pitch)
-    ratio = music_parameters.JustIntonationPitch.cents_to_ratio(pitch_interval.cents)
+    ratio = music_parameters.JustIntonationPitch.cents_to_ratio(pitch_interval.interval)
     just_intonation_pitch = music_parameters.JustIntonationPitch(
         ratio.limit_denominator(10)
     )
@@ -68,7 +68,7 @@ CLAVICHORD_PITCH_TUPLE = tuple(
         functools.reduce(
             operator.add,
             (
-                CLAVICHORD_AMBITUS.find_pitch_variant_tuple(pitch)
+                CLAVICHORD_AMBITUS.get_pitch_variant_tuple(pitch)
                 for pitch in CLAVICHORD_CHROMATIC_PITCH_TUPLE
             ),
         )

@@ -31,5 +31,6 @@ PATH.CDD.DATA.PESSOA.BOOK = "Livro_do_Desassossego.epub"
 
 
 FORCE_TO_COMPUTE_FADO = False
+FORCE_TO_COMPUTE_PESSOA = False
 
 del os, Path
