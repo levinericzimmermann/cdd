@@ -5,7 +5,10 @@ from mutwo import cdd_interfaces
 from mutwo import core_converters
 
 
-__all__ = ("ChapterToLatexDocument",)
+__all__ = (
+    "ChapterToLatexDocument",
+    "SilenceChapterToLatexDocument",
+)
 
 
 class ChapterToLatexDocument(core_converters.abc.Converter):
@@ -18,7 +21,7 @@ class ChapterToLatexDocument(core_converters.abc.Converter):
             (
                 "geometry",
                 [
-                    pylatex.NoEscape(r"a4"),
+                    pylatex.NoEscape(r"a4paper"),
                     pylatex.NoEscape(r"top=2cm"),
                     pylatex.NoEscape(r"left=1.5cm"),
                     pylatex.NoEscape(r"right=1.5cm"),
@@ -31,9 +34,8 @@ class ChapterToLatexDocument(core_converters.abc.Converter):
         self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
     ) -> tuple[str, ...]:
         return (
-            # r"\fancyhead{}",
-            r"\fancyfoot{}",
             r"\fancyhead[CO,CE]{cdd: " + instrument_name + " part book}",
+            r"\fancyfoot{}",
         )
 
     def convert(
@@ -54,3 +56,49 @@ class ChapterToLatexDocument(core_converters.abc.Converter):
         index_text = num2words.num2words(index, lang="pt")
         document.append(pylatex.Section(f"No. {index} [{index_text}]", numbering=False))
         return document
+
+
+class SilenceChapterToLatexDocument(ChapterToLatexDocument):
+    text = r"""
+play or don't play a tape of recorded silence.\\
+
+open or don't open a window.\\
+
+keep focused, present, listening to the silence.\\
+
+(up to 4'33; should neither be played at the beginning nor ending of a performance)\\
+"""
+
+    def convert(
+        self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
+    ) -> pylatex.Document:
+        latex_document = super().convert(chapter_to_convert, instrument_name)
+        instruction_mini_page = pylatex.MiniPage(
+            fontsize="large",
+            # width="10cm",
+            # height="20cm",
+            # align="c",
+            content_pos="c",
+            pos="c",
+            data=[pylatex.NoEscape(self.text)],
+        )
+        pessoa_mini_page = pylatex.MiniPage(
+            fontsize="small",
+            # width="10cm",
+            # height="20cm",
+            align="r",
+            content_pos="c",
+            pos="c",
+            data=[
+                pylatex.NoEscape(
+                    f"``{chapter_to_convert.pessoa_lyric.written_representation}''"
+                )
+            ],
+        )
+        latex_document.append(pylatex.NoEscape(r"\vfill"))
+        latex_document.append(instruction_mini_page)
+        latex_document.append(pylatex.NoEscape(r"\vfill"))
+        latex_document.append(pylatex.NoEscape(r"\vfill"))
+        latex_document.append(pessoa_mini_page)
+        latex_document.append(pylatex.NoEscape(r"\vfill"))
+        return latex_document

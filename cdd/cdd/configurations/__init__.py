@@ -1,6 +1,6 @@
 import os
 
-CHAPTER_TO_RENDER_TUPLE = (6,)
+CHAPTER_TO_RENDER_TUPLE = (6, 60)
 
 
 class Path(str):
@@ -31,6 +31,6 @@ PATH.CDD.DATA.PESSOA.BOOK = "Livro_do_Desassossego.epub"
 
 
 FORCE_TO_COMPUTE_FADO = False
-FORCE_TO_COMPUTE_PESSOA = False
+FORCE_TO_COMPUTE_PESSOA = True
 
 del os, Path

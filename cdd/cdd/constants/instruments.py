@@ -74,3 +74,9 @@ CLAVICHORD_PITCH_TUPLE = tuple(
         )
     )
 )
+
+INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {
+    "soprano": "s.",
+    "clarinet": "cl.",
+    "clavichord": "cv.",
+}
