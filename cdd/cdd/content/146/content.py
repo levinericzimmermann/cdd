@@ -173,7 +173,7 @@ class Chapter(cdd.chapters.Chapter):
         simultaneous_event = self._get_empty_simultaneous_event()
         simple_voice = self.make_simple_suject_speaking_voice()
         for sequential_event in simultaneous_event[1:]:
-            sequential_event.extend(simple_voice)
+            sequential_event.extend(simple_voice.copy())
         self.add_metronome_content(simultaneous_event)
         self.add_missing_note(simultaneous_event)
         cdd.utilities.add_instrument_name(simultaneous_event)

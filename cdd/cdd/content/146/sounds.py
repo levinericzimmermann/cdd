@@ -1,3 +1,4 @@
+import copy
 import random
 
 import voxpopuli
@@ -24,7 +25,7 @@ class SimpleEventToPhonemeString(core_converters.SimpleEventToAttribute):
 
 
 class SequentialEventToMbrolaFriendlyEvent(core_converters.abc.EventConverter):
-    def _convert_simple_event(self, event_to_convert, absolute_entry_delay):
+    def _convert_simple_event(self, event_to_convert, _):
         sequential_event = core_events.SequentialEvent([])
         try:
             phonetic_representation = event_to_convert.lyric.phonetic_representation
@@ -36,7 +37,8 @@ class SequentialEventToMbrolaFriendlyEvent(core_converters.abc.EventConverter):
             )
             for phoneme in phonetic_representation:
                 new_event = music_events.NoteLike(
-                    event_to_convert.pitch_list, duration=duration_per_event
+                    copy.deepcopy(event_to_convert.pitch_list),
+                    duration=duration_per_event,
                 )
                 new_event.phoneme = phoneme
                 sequential_event.append(new_event)
@@ -54,15 +56,6 @@ class SequentialEventToMbrolaFriendlyEvent(core_converters.abc.EventConverter):
 
 
 def main(chapter: cdd.chapters.Chapter):
-    def simple_event_to_phoneme_string(simple_event_to_convert) -> str:
-        if hasattr(simple_event_to_convert, "lyric"):
-            phonetic_representation = (
-                simple_event_to_convert.lyric.phonetic_representation
-            )
-        else:
-            phonetic_representation = "_"
-        return phonetic_representation
-
     tempo_converter = core_converters.TempoConverter(chapter.tempo_envelope)
     simultaneous_event = tempo_converter.convert(
         chapter.simultaneous_event.set_parameter(
@@ -81,23 +74,21 @@ def main(chapter: cdd.chapters.Chapter):
         lambda _: music_parameters.WesternPitch(random.choice(["b", "bqs"]), 2),
     )
     for voice_index, voice in enumerate(simultaneous_event[1:]):
-        sequential_event_to_speaking_synthesis = mbrola_converters.EventToSpeakSynthesis(
-            voice=voxpopuli.Voice(lang="pt"),
-            event_to_phoneme_list=mbrola_converters.EventToPhonemeList(
-                simple_event_to_pitch=pitch_converter_tuple[voice_index],
-                # simple_event_to_phoneme_string=simple_event_to_phoneme_string,
-            ),
+        voice = copy.deepcopy(voice)
+        sequential_event_to_speaking_synthesis = (
+            mbrola_converters.EventToSpeakSynthesis(
+                voice=voxpopuli.Voice(lang="pt"),
+                event_to_phoneme_list=mbrola_converters.EventToPhonemeList(
+                    simple_event_to_pitch=pitch_converter_tuple[voice_index],
+                ),
+            )
         )
         path = chapter.get_sound_file_path(f"voice{voice_index}")
-        # voice = voice.set_parameter(
-        #     "duration", lambda duration: duration * 4, mutate=False
-        # )
-        voice = to_mbrola_friendly(voice)
-        sequential_event_to_speaking_synthesis.convert(voice, path)
+        mbrola_voice = to_mbrola_friendly(voice)
+        sequential_event_to_speaking_synthesis.convert(mbrola_voice, path)
 
     event_to_midi_file = midi_converters.EventToMidiFile()
     event_to_midi_file.convert(
-        # simultaneous_event[0].set_parameter('duration', lambda duration: duration * 4, mutate=False), chapter.get_midi_path("percussion")
         simultaneous_event[0],
         chapter.get_midi_path("percussion"),
     )
