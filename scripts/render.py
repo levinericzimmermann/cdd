@@ -8,7 +8,9 @@ def render(render_method_list=["render_notation", "render_sound"]):
         try:
             chapter = getattr(cdd.content, str(chapter_to_render_name)).CHAPTER
         except AttributeError:
-            warnings.warn(f"Can't find chapter: {chapter_to_render_name}.")
+            warnings.warn(
+                f"Can't find chapter: {chapter_to_render_name}.", RuntimeWarning
+            )
         else:
             for render_method in render_method_list:
                 getattr(chapter, render_method)()

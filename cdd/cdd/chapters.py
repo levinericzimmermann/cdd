@@ -22,11 +22,11 @@ class Chapter(cdd_interfaces.abc.Chapter):
 
     def get_midi_path(self, instrument_name: str) -> str:
         return (
-            f"{cdd.configurations.PATH.BUILDS.MIDI}/{self._index}_{instrument_name}.mid"
+            f"{cdd.configurations.PATH.BUILDS.MIDI}/{self.index}_{instrument_name}.mid"
         )
 
     def get_sound_file_path(self, instrument_name: str) -> str:
-        return f"{cdd.configurations.PATH.BUILDS.SOUND_FILES}/{self._index}_{instrument_name}.wav"
+        return f"{cdd.configurations.PATH.BUILDS.SOUND_FILES}/{self.index}_{instrument_name}.wav"
 
     def render_notation(self):
         importlib.import_module(f"cdd.content.{self.index}.notations").main(self)

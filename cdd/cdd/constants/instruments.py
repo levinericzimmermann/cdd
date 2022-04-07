@@ -82,3 +82,14 @@ INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {
 }
 
 ADDED_INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {"percussion": "perc."}
+
+SHORT_INSTRUMENT_NAME_TO_INSTRUMENT_NAME = {
+    short_instrument_name: instrument_name
+    for instrument_name, short_instrument_name in INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME.items()
+}
+SHORT_INSTRUMENT_NAME_TO_INSTRUMENT_NAME.update(
+    {
+        short_instrument_name: instrument_name
+        for instrument_name, short_instrument_name in ADDED_INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME.items()
+    }
+)
