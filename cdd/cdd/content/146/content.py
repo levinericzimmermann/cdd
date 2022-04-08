@@ -1,5 +1,6 @@
-import abjad
+import math
 
+import abjad
 import expenvelope
 import quicktions as fractions
 
@@ -10,30 +11,36 @@ from mutwo import music_events
 
 import cdd
 
-TIME_SIGNATURE_LOOP = (
-    abjad.TimeSignature((6, 4)),
-    abjad.TimeSignature((3, 4)),
-    abjad.TimeSignature((6, 4)),
-    abjad.TimeSignature((4, 4)),
-)
 
-METRONME_LOOP = (
-    # bar 6/4
-    music_events.NoteLike(duration=fractions.Fraction(1, 4)),
-    music_events.NoteLike(duration=fractions.Fraction(1, 4)),
-    music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(4, 4)),
-    # bar 3/4
-    music_events.NoteLike(duration=fractions.Fraction(1, 4)),
-    music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(2, 4)),
-    # bar 6/4
-    music_events.NoteLike(duration=fractions.Fraction(3, 16)),
-    music_events.NoteLike(duration=fractions.Fraction(1, 16)),
-    music_events.NoteLike(duration=fractions.Fraction(1, 4)),
-    music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(4, 4)),
-    # bar 4/4
-    music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(1, 4)),
-    music_events.NoteLike(duration=fractions.Fraction(1, 4)),
-    music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(2, 4)),
+# TODO(
+#   make one loop much longer with more smaller bars,
+#   to make it more delicate and to give the language more
+#   space for rests and rhythmic variations
+# )
+
+# TODO(split the uniform speaking)
+
+TIME_SIGNATURE_LOOP = (abjad.TimeSignature((20, 4)),)
+
+METRONME_LOOP = core_events.SequentialEvent(
+    [
+        # bar 6/4
+        music_events.NoteLike(duration=fractions.Fraction(1, 4)),
+        music_events.NoteLike(duration=fractions.Fraction(1, 4)),
+        music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(6, 4)),
+        # bar 3/4
+        music_events.NoteLike(duration=fractions.Fraction(1, 4)),
+        music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(4, 4)),
+        # bar 6/4
+        music_events.NoteLike(duration=fractions.Fraction(3, 16)),
+        music_events.NoteLike(duration=fractions.Fraction(1, 16)),
+        music_events.NoteLike(duration=fractions.Fraction(1, 4)),
+        music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(7, 4)),
+        # bar 4/4
+        music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(1, 4)),
+        music_events.NoteLike(duration=fractions.Fraction(1, 4)),
+        music_events.NoteLike(pitch_list=[], duration=fractions.Fraction(2, 4)),
+    ]
 )
 
 LOOP_COUNT = 2
@@ -44,13 +51,13 @@ class Chapter(cdd.chapters.Chapter):
         super().__init__(*args, **kwargs)
         self.suject_divided_sentence_tuple = self.make_suject_divided_sentence_tuple()
         self.suject_duration_tuple = (
-            fractions.Fraction(6, 4),
-            fractions.Fraction(3, 4),
-            fractions.Fraction(10, 4),
+            fractions.Fraction(8, 4),
+            fractions.Fraction(5, 4),
+            fractions.Fraction(13, 4),
         )
         self.rhythm_per_sentence_per_suject = self.make_rhythm_per_suject()
-        self.time_signature_sequence = self.make_time_signature_sequence()
         self.simultaneous_event = self.make_simultaneous_event()
+        self.time_signature_sequence = self.make_time_signature_sequence()
 
     def make_suject_divided_sentence_tuple(
         self,
@@ -59,8 +66,8 @@ class Chapter(cdd.chapters.Chapter):
         tuple[tuple[cdd_parameters.Word, ...], ...],
     ]:
         sentence0, sentence1 = self.pessoa_lyric
-        suject_index_list0 = (0, 4, 6, 10)
-        suject_index_list1 = (0, 5, 7, 11)
+        suject_index_list0 = (0, 4, 7, 13)
+        suject_index_list1 = (0, 5, 7, 13)
         suject_list0 = [
             sentence0[index0:index1]
             for index0, index1 in zip(suject_index_list0, suject_index_list0[1:])
@@ -88,13 +95,22 @@ class Chapter(cdd.chapters.Chapter):
             for index, syllable_count in enumerate((syllable_count0, syllable_count1)):
                 rhythm = core_events.SequentialEvent([])
                 rest_duration = suject_duration - (syllable_duration * syllable_count)
-                rest = core_events.SimpleEvent(rest_duration)
+                beat_count = rest_duration / fractions.Fraction(1, 8)
+                beat_per_rest = beat_count // 2
+                rest_left = (beat_per_rest + (beat_count % 2)) * fractions.Fraction(
+                    1, 8
+                )
+                rest_right = beat_per_rest * fractions.Fraction(1, 8)
+                rest = core_events.SimpleEvent(rest_left)
                 rest.is_rest = True
                 rhythm.append(rest)
                 for _ in range(syllable_count):
                     syllable = core_events.SimpleEvent(syllable_duration)
                     syllable.is_rest = False
                     rhythm.append(syllable)
+                rest = core_events.SimpleEvent(rest_right)
+                rest.is_rest = True
+                rhythm.append(rest)
                 rhythm_list_list[index].append(rhythm)
 
         return tuple(tuple(rhythm_list) for rhythm_list in rhythm_list_list)
@@ -153,14 +169,25 @@ class Chapter(cdd.chapters.Chapter):
         )
 
     def make_time_signature_sequence(self) -> tuple[abjad.TimeSignature, ...]:
-        time_signature_list = []
-        for _ in range(LOOP_COUNT):
-            time_signature_list.extend(TIME_SIGNATURE_LOOP)
-        return tuple(time_signature_list)
+        # print("TIME SIG", (int(math.ceil(self.simultaneous_event.duration * 4)), 4))
+        # return (
+        #     abjad.TimeSignature(
+        #         (int(math.ceil(self.simultaneous_event.duration * 4)), 4)
+        #     ),
+        # )
+        return (
+            abjad.TimeSignature(
+                (15, 4)
+            ),
+        )
+        # time_signature_list = []
+        # for _ in range(LOOP_COUNT):
+        #     time_signature_list.extend(TIME_SIGNATURE_LOOP)
+        # return tuple(time_signature_list)
 
     def add_metronome_content(self, simultaneous_event):
         for _ in range(LOOP_COUNT):
-            simultaneous_event[0].extend(METRONME_LOOP)
+            simultaneous_event[0].extend(METRONME_LOOP.copy())
 
     def add_missing_note(self, simultaneous_event):
         simultaneous_event_duration = simultaneous_event.duration
@@ -177,6 +204,8 @@ class Chapter(cdd.chapters.Chapter):
         self.add_metronome_content(simultaneous_event)
         self.add_missing_note(simultaneous_event)
         cdd.utilities.add_instrument_name(simultaneous_event)
+        # We don't need short instrument name notation for this score
+        [setattr(event, "short_instrument_name", "") for event in simultaneous_event]
         return simultaneous_event
 
     tempo_envelope = expenvelope.Envelope.from_points(
@@ -185,7 +214,6 @@ class Chapter(cdd.chapters.Chapter):
 
     instruction_text = r"""
 speak text clearly \& naturally; avoid theatric, monotonous or mechanical voice.\\
-a natural intonation is more important than a precise rhythm.\\
 singer leads group by playing the additional percussion line.\\
 instrument can be any (but only one) percussive sound, e.g. clapping, wood block, a tiny bell, \dots\\
 """

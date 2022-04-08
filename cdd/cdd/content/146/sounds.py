@@ -66,7 +66,7 @@ def main(chapter: cdd.chapters.Chapter):
     to_mbrola_friendly = SequentialEventToMbrolaFriendlyEvent()
     pitch_converter_tuple = (
         lambda _: music_parameters.WesternPitch(
-            random.choice(["a", "gqs", "aqs", "af", "aqf"]), 4
+            random.choice(["c", "cqs", "dqs", "cf", "cqf"]), 4
         ),
         lambda _: music_parameters.WesternPitch(
             random.choice(["f", "fqs", "fs", "e", "eqs"]), 3
@@ -89,6 +89,8 @@ def main(chapter: cdd.chapters.Chapter):
 
     event_to_midi_file = midi_converters.EventToMidiFile()
     event_to_midi_file.convert(
-        simultaneous_event[0],
+        simultaneous_event[0].set_parameter(
+            "duration", lambda duration: duration * 2, mutate=False
+        ),
         chapter.get_midi_path("percussion"),
     )
