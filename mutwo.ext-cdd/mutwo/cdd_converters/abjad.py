@@ -22,14 +22,12 @@ class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):
                             "Luxi Mono"
                             (/ staff-height pt 20)))"""
         )
-        paper_block.items.append(
-            r"""score-system-spacing =
-    #'((basic-distance . 30)
-    (minimum-distance . 18)
-    (padding . 1)
-    (stretchability . 12))"""
-        )
         return paper_block
+
+    def get_header_block(self) -> abjad.Block:
+        header_block = abjad.Block("header")
+        header_block.items.append(r"tagline = ##f")
+        return header_block
 
     def get_includes(self, add_book_preamble: bool, add_ekmelily: bool) -> list[str]:
         includes = []
@@ -58,7 +56,8 @@ class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):
 
         paper_block = self.get_paper_block()
         layout_block = self.get_layout_block(margin)
+        header_block = self.get_header_block()
 
-        lilypond_file.items.extend([paper_block, layout_block])
+        lilypond_file.items.extend([header_block, paper_block, layout_block])
 
         return lilypond_file

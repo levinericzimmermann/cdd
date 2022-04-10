@@ -2,5 +2,8 @@ from setuptools import setup
 
 setup(
     name="cdd",
-    install_requires=["mutwo.ext-mbrola==0.2.0"],
+    install_requires=[
+        "more_itertools==8.12.0",
+        "mutwo.ext-common-generators==0.8.1",
+    ],
 )

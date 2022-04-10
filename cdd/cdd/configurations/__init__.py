@@ -1,6 +1,6 @@
 import os
 
-CHAPTER_TO_RENDER_TUPLE = (146, 60)
+CHAPTER_TO_RENDER_TUPLE = (6, 60)
 
 
 class Path(str):

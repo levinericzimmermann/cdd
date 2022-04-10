@@ -2,11 +2,13 @@ import typing
 
 import abjad
 import expenvelope
+import quicktions as fractions
 
 from mutwo import abjad_converters
 from mutwo import cdd_converters
 from mutwo import core_events
 from mutwo import core_parameters
+from mutwo import music_events
 
 import cdd
 
@@ -48,13 +50,23 @@ class SequentialEventToRhythmicStaff(abjad_converters.SequentialEventToAbjadVoic
             # abjad.attach(abjad.LilyPondLiteral(r"\cadenzaOn"), first_leaf)
             abjad.attach(
                 abjad.LilyPondLiteral(
-                    r"\set Score.proportionalNotationDuration = #(ly:make-moment 1/16)"
+                    r"\set Score.proportionalNotationDuration = #(ly:make-moment 1/32)"
                 ),
                 first_leaf,
             )
             abjad.attach(
                 abjad.LilyPondLiteral(
                     r"\override Score.SpacingSpanner.strict-note-spacing = ##t"
+                ),
+                first_leaf,
+            )
+            abjad.attach(
+                abjad.LilyPondLiteral(r"\omit StaffGroup.SystemStartBrace"),
+                first_leaf,
+            )
+            abjad.attach(
+                abjad.LilyPondLiteral(
+                    r"\override StaffGroup.SystemStartBracket.collapse-height = #100"
                 ),
                 first_leaf,
             )
@@ -72,13 +84,20 @@ class SequentialEventToRhythmicStaff(abjad_converters.SequentialEventToAbjadVoic
 class TextSequentialEventToRhythmicStaff(SequentialEventToRhythmicStaff):
     def convert(self, *args, **kwargs):
         rhythmic_staff = super().convert(*args, **kwargs)
-        rhythmic_staff.remove_commands.append("Staff_symbol_engraver")
+        # rhythmic_staff.remove_commands.append("Staff_symbol_engraver")
         rhythmic_staff[0].remove_commands.append("Note_heads_engraver")
-        if rhythmic_staff[0]:
-            first_leaf = abjad.get.leaf(rhythmic_staff, 0)
-            # abjad.attach(abjad.LilyPondLiteral(r"\magnifyStaff #(magstep -50)"), first_leaf)
-            abjad.attach(abjad.LilyPondLiteral(r"\stopStaff"), first_leaf)
+        # if rhythmic_staff[0]:
+        #     first_leaf = abjad.get.leaf(rhythmic_staff, 0)
+        #     # abjad.attach(abjad.LilyPondLiteral(r"\magnifyStaff #(magstep -50)"), first_leaf)
+        #     # abjad.attach(abjad.LilyPondLiteral(r"\stopStaff"), first_leaf)
 
+        return rhythmic_staff
+
+
+class SopranoSequentialEventToRhythmicStaff(TextSequentialEventToRhythmicStaff):
+    def convert(self, *args, **kwargs):
+        rhythmic_staff = super().convert(*args, **kwargs)
+        rhythmic_staff.remove_commands.append("Staff_symbol_engraver")
         return rhythmic_staff
 
 
@@ -113,9 +132,14 @@ class SimultaneousEventToAbjadScore(
                         instrument_name
                     ]
                 )
-                sequential_event_to_rhythmic_staff_class = (
-                    TextSequentialEventToRhythmicStaff
-                )
+                if instrument_name == "soprano":
+                    sequential_event_to_rhythmic_staff_class = (
+                        SopranoSequentialEventToRhythmicStaff
+                    )
+                else:
+                    sequential_event_to_rhythmic_staff_class = (
+                        TextSequentialEventToRhythmicStaff
+                    )
             sequential_event_to_rhythmic_staff = (
                 sequential_event_to_rhythmic_staff_class(
                     time_signature_sequence=time_signature_sequence,
@@ -126,17 +150,49 @@ class SimultaneousEventToAbjadScore(
                 {short_instrument_name: sequential_event_to_rhythmic_staff}
             )
 
+        tag_to_complex_event_to_abjad_container_converter.update(
+            {"empty": sequential_event_to_rhythmic_staff}
+        )
+
         super().__init__(
             nested_complex_event_to_complex_event_to_abjad_container_converters_converter=abjad_converters.TagBasedNestedComplexEventToComplexEventToAbjadContainers(
                 tag_to_complex_event_to_abjad_container_converter=tag_to_complex_event_to_abjad_container_converter
             ),
-            abjad_container_class=abjad.Score,
-            lilypond_type_of_abjad_container="Score",
+            abjad_container_class=abjad.StaffGroup,
+            lilypond_type_of_abjad_container="StaffGroup",
         )
 
-    def convert(self, *args, **kwargs) -> abjad.Score:
-        abjad_score = super().convert(*args, **kwargs)
+    def convert(self, simultaneous_event, *args, **kwargs) -> abjad.Score:
+        simultaneous_event = simultaneous_event.copy()
+        # simultaneous_event[0].instrument_name = ""
+        empty_sequential_event = core_events.TaggedSequentialEvent([], tag="empty")
+        event_count = int(simultaneous_event.duration)
+        for _ in range(event_count):
+            empty_sequential_event.append(
+                music_events.NoteLike(fractions.Fraction(1, 1))
+            )
+        simultaneous_event.append(empty_sequential_event)
+        abjad_staff_group = super().convert(simultaneous_event, *args, **kwargs)
+        abjad_score = abjad.Score([abjad_staff_group])
         abjad_score.remove_commands.append("Bar_number_engraver")
+        for staff in abjad_score:
+            last_leaf = staff[0][-1][-1]
+            try:
+                abjad.attach(
+                    abjad.LilyPondLiteral(
+                        r"\override StaffGroup.SystemStartBracket.collapse-height = #0"
+                    ),
+                    last_leaf,
+                )
+                abjad.attach(
+                    abjad.LilyPondLiteral(
+                        r"\undo \omit Staff.BarLine", format_slot="after"
+                    ),
+                    last_leaf,
+                )
+                abjad.attach(abjad.BarLine("|."), last_leaf)
+            except Exception:
+                pass
         return abjad_score
 
 
@@ -155,9 +211,8 @@ class AbjadScoreListToLilyPondFile(cdd_converters.AbjadScoreListToLilyPondFile):
     \RhythmicStaff
       \override VerticalAxisGroup.default-staff-staff-spacing =
         #'((basic-distance . 4)
-         (minimum-distance . 0)
+         (minimum-distance . 4)
          (padding . 0))
-  }
       \override VerticalAxisGroup.staff-staff-spacing.basic-distance = #0
       \override VerticalAxisGroup.nonstaff-unrelatedstaff-spacing.basic-distance = #0
       \override VerticalAxisGroup.nonstaff-relatedstaff-spacing.basic-distance = #0
@@ -166,6 +221,18 @@ class AbjadScoreListToLilyPondFile(cdd_converters.AbjadScoreListToLilyPondFile):
 """
         )
         return layout_block
+
+    def get_paper_block(self, *args, **kwargs) -> abjad.Block:
+        paper_block = super().get_paper_block(*args, **kwargs)
+        paper_block.items.append(
+            r"""
+#(set! paper-alist
+  (cons '("my size" . (cons (* 15 in) (* 17 in))) paper-alist))
+#(set-paper-size "my size")
+system-system-spacing = #'((basic-distance . 7.5) (padding . 0))
+"""
+        )
+        return paper_block
 
 
 def main(chapter: cdd.chapters.Chapter):
@@ -177,14 +244,21 @@ def main(chapter: cdd.chapters.Chapter):
     abjad_score_list = [
         simultaneous_event_to_abjad_score.convert(chapter.simultaneous_event)
     ]
+    abjad.attach(
+        abjad.Markup("duration: circa 3'15", direction="^"),
+        abjad.get.leaf(abjad_score_list[0], 0),
+    )
     lilypond_file = abjad_score_list_to_lilypond_file.convert(
-        abjad_score_list, add_ekmelily=False, add_book_preamble=True, margin=0
+        abjad_score_list, add_ekmelily=False, add_book_preamble=False, margin=0
     )
     notation_file_path = chapter.get_notation_path("clarinet")
     lilypond_file_path = f"{notation_file_path}_lilypond.pdf"
     abjad.persist.as_pdf(lilypond_file, lilypond_file_path)
     chapter_to_latex_document = cdd_converters.ScoreChapterToLatexDocument(
-        lilypond_file_path.split("/")[-1], instruction_text=chapter.instruction_text
+        lilypond_file_path.split("/")[-1],
+        instruction_text=chapter.instruction_text,
+        width=1.2,
+        hspace="-1.5cm",
     )
     latex_document = chapter_to_latex_document.convert(chapter, "clarinet")
     latex_document.generate_pdf(chapter.get_notation_path("clarinet"), clean_tex=False)

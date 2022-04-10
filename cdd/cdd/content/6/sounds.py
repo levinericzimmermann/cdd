@@ -3,6 +3,7 @@ import random
 
 import voxpopuli
 
+from mutwo import cdd_converters
 from mutwo import core_converters
 from mutwo import core_events
 from mutwo import mbrola_converters
@@ -58,11 +59,11 @@ class SequentialEventToMbrolaFriendlyEvent(core_converters.abc.EventConverter):
 def main(chapter: cdd.chapters.Chapter):
     tempo_converter = core_converters.TempoConverter(chapter.tempo_envelope)
     simultaneous_event = tempo_converter.convert(
-        chapter.simultaneous_event.set_parameter(
-            "duration", lambda duration: duration * 4, mutate=False
-        )
+        chapter.simultaneous_event
     )
-
+    # simultaneous_event = chapter.simultaneous_event.set_parameter(
+    #     "duration", lambda duration: duration * 2, mutate=False
+    # )
     to_mbrola_friendly = SequentialEventToMbrolaFriendlyEvent()
     pitch_converter_tuple = (
         lambda _: music_parameters.WesternPitch(
@@ -76,11 +77,13 @@ def main(chapter: cdd.chapters.Chapter):
     for voice_index, voice in enumerate(simultaneous_event[1:]):
         voice = copy.deepcopy(voice)
         sequential_event_to_speaking_synthesis = (
-            mbrola_converters.EventToSpeakSynthesis(
-                voice=voxpopuli.Voice(lang="pt"),
-                event_to_phoneme_list=mbrola_converters.EventToPhonemeList(
-                    simple_event_to_pitch=pitch_converter_tuple[voice_index],
-                ),
+            cdd_converters.EventToSafeSpeakingSynthesis(
+                mbrola_converters.EventToSpeakSynthesis(
+                    voice=voxpopuli.Voice(lang="pt"),
+                    event_to_phoneme_list=mbrola_converters.EventToPhonemeList(
+                        simple_event_to_pitch=pitch_converter_tuple[voice_index],
+                    ),
+                )
             )
         )
         path = chapter.get_sound_file_path(f"voice{voice_index}")

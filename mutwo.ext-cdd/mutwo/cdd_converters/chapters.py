@@ -23,10 +23,12 @@ class ChapterToLatexDocument(core_converters.abc.Converter):
                 "geometry",
                 [
                     pylatex.NoEscape(r"a4paper"),
-                    pylatex.NoEscape(r"top=2cm"),
+                    pylatex.NoEscape(r"top=1cm"),
                     pylatex.NoEscape(r"left=1.5cm"),
                     pylatex.NoEscape(r"right=1.5cm"),
-                    pylatex.NoEscape(r"bottom=2cm"),
+                    pylatex.NoEscape(r"bottom=0.5cm"),
+                    pylatex.NoEscape(r"headsep=0.25cm"),
+                    pylatex.NoEscape(r"marginparsep=0cm"),
                 ],
             ),
         )
@@ -99,9 +101,11 @@ class TextChapterToLatexDocument(ChapterToLatexDocument):
 
 
 class ScoreChapterToLatexDocument(ChapterToLatexDocument):
-    def __init__(self, score_path: str, instruction_text: str = ""):
+    def __init__(self, score_path: str, instruction_text: str = "", width: float = 1, hspace: str = None):
+        self.width = width
         self.instruction_text = instruction_text
         self.score_path = score_path
+        self._hspace = hspace
 
     def get_package_name_and_options_tuple(
         self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
@@ -111,16 +115,35 @@ class ScoreChapterToLatexDocument(ChapterToLatexDocument):
         )
         return package_name_and_options_tuple + (("graphicx", []),)
 
+    def get_preamble_tuple(self, *args, **kwargs):
+        preamble_tuple = super().get_preamble_tuple(*args, **kwargs)
+        preamble_tuple += (
+            r"\renewcommand\textfraction{0}",
+            r"\setlength{\floatsep}{0pt plus 0.0pt minus 0.0pt}",
+            r"\setlength{\textfloatsep}{0pt plus 0.0pt minus 0.0pt}",
+        )
+        return preamble_tuple
+
     def convert(
         self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
     ) -> pylatex.Document:
         latex_document = super().convert(chapter_to_convert, instrument_name)
+        # latex_document.append(pylatex.NoEscape())
+        # latex_document.append(pylatex.NoEscape())
+        # latex_document.append(pylatex.NoEscape())
         latex_document.append(pylatex.NoEscape(self.instruction_text))
-        figure = pylatex.Figure(position="h")
+        figure = pylatex.Figure(position="h!")
+        if self._hspace:
+            figure.append(pylatex.NoEscape(r'\hspace{' + self._hspace + '}'))
         figure.append(
             pylatex.NoEscape(
-                r"\includegraphics[width=0.8\textwidth]{" + self.score_path + "}"
+                r"\includegraphics[width="
+                + str(self.width)
+                + r"\textwidth]{"
+                + self.score_path
+                + "}"
             )
         )
         latex_document.append(figure)
+        latex_document.append(pylatex.NoEscape(r"\clearpage"))
         return latex_document

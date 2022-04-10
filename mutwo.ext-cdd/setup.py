@@ -27,6 +27,8 @@ setuptools.setup(
         "mutwo.ext-abjad>=0.6.0, <0.7.0",
         "mutwo.ext-ekmelily>=0.5.0, <0.6.0",
         "mutwo.ext-isis>=0.7.0, <0.8.0",
+        "mutwo.ext-csound>=0.4.0, <0.5.0",
+        "mutwo.ext-mbrola==0.2.0",
         # for auto reading pessoa text from ebook
         "EbookLib==0.17.1",  # (this is for loading the html content of epub file)
         "beautifulsoup4==4.10.0",  # (this is to parse the content of the epub file)
