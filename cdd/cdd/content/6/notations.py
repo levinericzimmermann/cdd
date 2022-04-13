@@ -251,14 +251,19 @@ def main(chapter: cdd.chapters.Chapter):
     lilypond_file = abjad_score_list_to_lilypond_file.convert(
         abjad_score_list, add_ekmelily=False, add_book_preamble=False, margin=0
     )
-    notation_file_path = chapter.get_notation_path("clarinet")
-    lilypond_file_path = f"{notation_file_path}_lilypond.pdf"
-    abjad.persist.as_pdf(lilypond_file, lilypond_file_path)
-    chapter_to_latex_document = cdd_converters.ScoreChapterToLatexDocument(
-        lilypond_file_path.split("/")[-1],
-        instruction_text=chapter.instruction_text,
-        width=1.2,
-        hspace="-1.5cm",
-    )
-    latex_document = chapter_to_latex_document.convert(chapter, "clarinet")
-    latex_document.generate_pdf(chapter.get_notation_path("clarinet"), clean_tex=False)
+    for (
+        instrument_name
+    ) in cdd.constants.INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME.keys():
+        notation_file_path = chapter.get_notation_path(instrument_name)
+        lilypond_file_path = f"{notation_file_path}_lilypond.pdf"
+        abjad.persist.as_pdf(lilypond_file, lilypond_file_path)
+        chapter_to_latex_document = cdd_converters.ScoreChapterToLatexDocument(
+            lilypond_file_path.split("/")[-1],
+            instruction_text=chapter.instruction_text,
+            width=1.2,
+            hspace="-1.5cm",
+        )
+        latex_document = chapter_to_latex_document.convert(chapter, instrument_name)
+        latex_document.generate_pdf(
+            chapter.get_notation_path(instrument_name), clean_tex=True
+        )

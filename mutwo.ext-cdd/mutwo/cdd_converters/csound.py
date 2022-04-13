@@ -6,30 +6,26 @@ from mutwo import core_converters
 from mutwo import core_constants
 from mutwo import core_events
 from mutwo import csound_converters
+from mutwo import isis_converters
 from mutwo import mbrola_converters
-from mutwo import music_parameters
 
 
-__all__ = ("EventToSafeSpeakingSynthesis",)
+__all__ = (
+    "EventToSafeSynthesis",
+    "EventToSafeSpeakingSynthesis",
+    "EventToSafeSingingSynthesis",
+)
 
 
-class EventToSafeSpeakingSynthesis(csound_converters.EventToSoundFile):
+class EventToSafeSynthesis(csound_converters.EventToSoundFile):
     class EventToSplitEvent(core_converters.abc.EventConverter):
         def __init__(
             self,
-            simple_event_to_pitch: typing.Callable[
-                [core_events.SimpleEvent], typing.Optional[music_parameters.abc.Pitch]
-            ] = mbrola_converters.SimpleEventToPitch(),
-            simple_event_to_phoneme_string: typing.Callable[
-                [core_events.SimpleEvent], str
-            ] = mbrola_converters.SimpleEventToPhonemeString(),
+            is_rest: typing.Callable[[core_events.SimpleEvent], bool],
             split_duration: core_constants.DurationType = 2,
         ):
             self._split_duration = split_duration
-            self._is_rest = (
-                lambda simple_event: not simple_event_to_pitch(simple_event)
-                or simple_event_to_phoneme_string(simple_event) == "_"
-            )
+            self._is_rest = is_rest
 
         def _convert_simple_event(
             self,
@@ -54,14 +50,18 @@ class EventToSafeSpeakingSynthesis(csound_converters.EventToSoundFile):
                 and isinstance(csound_concatenation_event[-1], core_events.SimpleEvent)
                 and (
                     is_long_rest
-                    and not hasattr(csound_concatenation_event[-1], "mbrola_event")
+                    and not hasattr(
+                        csound_concatenation_event[-1], "event_to_synthesize"
+                    )
                     or not is_long_rest
-                    and hasattr(csound_concatenation_event[-1], "mbrola_event")
+                    and hasattr(csound_concatenation_event[-1], "event_to_synthesize")
                 )
             ):
                 csound_concatenation_event[-1].duration += original_event.duration
                 if not is_long_rest:
-                    csound_concatenation_event[-1].mbrola_event.append(original_event)
+                    csound_concatenation_event[-1].event_to_synthesize.append(
+                        original_event
+                    )
             else:
                 if is_long_rest:
                     concatenation_event = core_events.SimpleEvent(
@@ -71,8 +71,8 @@ class EventToSafeSpeakingSynthesis(csound_converters.EventToSoundFile):
                     concatenation_event = core_events.SimpleEvent(
                         original_event.duration
                     )
-                    concatenation_event.mbrola_event = core_events.SequentialEvent(
-                        [original_event]
+                    concatenation_event.event_to_synthesize = (
+                        core_events.SequentialEvent([original_event])
                     )
                 csound_concatenation_event.append(concatenation_event)
 
@@ -141,18 +141,20 @@ class EventToSafeSpeakingSynthesis(csound_converters.EventToSoundFile):
             add_event(csound_concatenation_event)
             for event in flat_event_list:
                 event.duration = float(event.duration)
-                if hasattr(event, "mbrola_event"):
-                    event.sound_file_path = f".safe_mbrola_{uuid.uuid4()}.wav"
+                if hasattr(event, "event_to_synthesize"):
+                    event.sound_file_path = f".safe_synthesized_{uuid.uuid4()}.wav"
 
-            mbrola_sound_file_path_tuple = csound_concatenation_event.get_parameter(
-                "sound_file_path", flat=True
+            synthesized_sound_file_path_tuple = (
+                csound_concatenation_event.get_parameter("sound_file_path", flat=True)
             )
-            event_to_render_with_mbrola_tuple = (
-                csound_concatenation_event.get_parameter("mbrola_event", flat=True)
+            event_to_render_with_sound_engine_tuple = (
+                csound_concatenation_event.get_parameter(
+                    "event_to_synthesize", flat=True
+                )
             )
             return (
-                mbrola_sound_file_path_tuple,
-                event_to_render_with_mbrola_tuple,
+                synthesized_sound_file_path_tuple,
+                event_to_render_with_sound_engine_tuple,
                 csound_concatenation_event,
             )
 
@@ -166,9 +168,11 @@ endin
 
     def __init__(
         self,
-        event_to_speak_synthesis: mbrola_converters.EventToSpeakSynthesis = mbrola_converters.EventToSpeakSynthesis(),
+        event_to_sound_file: core_converters.abc.Converter,
+        is_rest: typing.Callable[[core_events.SimpleEvent], bool],
     ):
-        self._event_to_speak_synthesis = event_to_speak_synthesis
+        self._event_to_sound_file = event_to_sound_file
+        self._is_rest = is_rest
         temporary_csound_orchestra_path = f".{uuid.uuid4()}.orc"
         super().__init__(
             temporary_csound_orchestra_path,
@@ -177,17 +181,17 @@ endin
             ),
         )
 
-    def _render_mbrola(
+    def _render_synthesizer(
         self,
-        event_to_render_with_mbrola_tuple: tuple[core_events.abc.Event, ...],
-        mbrola_sound_file_path_tuple: tuple[str, ...],
+        event_to_render_with_synthesizer_tuple: tuple[core_events.abc.Event, ...],
+        synthesizer_sound_file_path_tuple: tuple[str, ...],
     ):
-        for event_to_render_with_mbrola, mbrola_sound_file_path in zip(
-            event_to_render_with_mbrola_tuple, mbrola_sound_file_path_tuple
+        for event_to_render_with_synthesizer, synthesizer_sound_file_path in zip(
+            event_to_render_with_synthesizer_tuple, synthesizer_sound_file_path_tuple
         ):
-            if event_to_render_with_mbrola is not None:
-                self._event_to_speak_synthesis.convert(
-                    event_to_render_with_mbrola, mbrola_sound_file_path
+            if event_to_render_with_synthesizer is not None:
+                self._event_to_sound_file.convert(
+                    event_to_render_with_synthesizer, synthesizer_sound_file_path
                 )
 
     def _save_csound_orchestra(self):
@@ -195,9 +199,9 @@ endin
             f.write(self.csound_orchestra)
 
     def _remove_temporary_sound_files(
-        self, mbrola_sound_file_path_tuple: tuple[str, ...]
+        self, synthesizer_sound_file_path_tuple: tuple[str, ...]
     ):
-        for sound_file_path in mbrola_sound_file_path_tuple:
+        for sound_file_path in synthesizer_sound_file_path_tuple:
             try:
                 os.remove(sound_file_path)
             except TypeError:
@@ -208,19 +212,79 @@ endin
 
     def convert(self, event_to_convert: str, sound_file_path: str):
         (
-            mbrola_sound_file_path_tuple,
-            event_to_render_with_mbrola_tuple,
+            synthesizer_sound_file_path_tuple,
+            event_to_render_with_synthesizer_tuple,
             csound_concatenation_event,
-        ) = self.EventToSplitEvent(
-            self._event_to_speak_synthesis._event_to_phoneme_list._simple_event_to_pitch,
-            self._event_to_speak_synthesis._event_to_phoneme_list._simple_event_to_phoneme_string,
-        )(
-            event_to_convert
-        )
-        self._render_mbrola(
-            event_to_render_with_mbrola_tuple, mbrola_sound_file_path_tuple
+        ) = self.EventToSplitEvent(self._is_rest)(event_to_convert)
+        self._render_synthesizer(
+            event_to_render_with_synthesizer_tuple, synthesizer_sound_file_path_tuple
         )
         self._save_csound_orchestra()
         super().convert(csound_concatenation_event, sound_file_path)
-        self._remove_temporary_sound_files(mbrola_sound_file_path_tuple)
+        self._remove_temporary_sound_files(synthesizer_sound_file_path_tuple)
         self._remove_csound_orchestra()
+
+
+class EventToSafeSpeakingSynthesis(EventToSafeSynthesis):
+    def __init__(
+        self,
+        event_to_speak_synthesis: mbrola_converters.EventToSpeakSynthesis = mbrola_converters.EventToSpeakSynthesis(),
+    ):
+        is_rest = (
+            lambda simple_event: not event_to_speak_synthesis._event_to_phoneme_list._simple_event_to_pitch(
+                simple_event
+            )
+            or event_to_speak_synthesis._event_to_phoneme_list._simple_event_to_phoneme_string(
+                simple_event
+            )
+            == "_"
+        )
+        super().__init__(event_to_speak_synthesis, is_rest)
+
+
+class EventToSafeSingingSynthesis(EventToSafeSynthesis):
+    csound_orchestra = r"""
+0dbfs=1
+instr 1
+    ; 1 second skip time because isis always starts one second late!
+    asig diskin2 p4, 1, 1
+    out asig
+endin
+"""
+
+
+    def __init__(
+        self,
+        event_to_singing_synthesis: isis_converters.EventToSingingSynthesis = isis_converters.EventToSingingSynthesis(
+            isis_converters.EventToIsisScore(
+                simple_event_to_vowel=lambda simple_event: simple_event.lyric.vowel,
+                simple_event_to_consonant_tuple=lambda simple_event: simple_event.lyric.consonant_tuple,
+            ),
+            "--cfg_synth etc/isis-cfg-synth.cfg",
+            "--cfg_style etc/isis-cfg-style.cfg",
+            "--seed 100",
+        ),
+    ):
+        def is_rest(simple_event: core_events.SimpleEvent) -> bool:
+            try:
+                pitch = event_to_singing_synthesis.isis_score_converter._extraction_function_dict[
+                    "pitch"
+                ](
+                    simple_event
+                )
+            except AttributeError:
+                return True
+            try:
+                volume = event_to_singing_synthesis.isis_score_converter._extraction_function_dict[
+                    "volume"
+                ](
+                    simple_event
+                )
+            except AttributeError:
+                return True
+            return pitch is None or volume is None or volume.amplitude == 0
+
+        super().__init__(event_to_singing_synthesis, is_rest)
+
+    def convert(self, event_to_convert: core_events.abc.Event, *args, **kwargs):
+        return super().convert(event_to_convert, *args, **kwargs)
