@@ -147,3 +147,10 @@ eggs/
 develop-eggs/
 
 *.epub
+
+*.opus
+
+*.WAV
+
+*.pickled
+*.eps
