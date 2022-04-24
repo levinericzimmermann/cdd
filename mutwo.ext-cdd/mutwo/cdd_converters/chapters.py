@@ -1,3 +1,5 @@
+import typing
+
 import num2words
 import pylatex
 
@@ -9,6 +11,8 @@ __all__ = (
     "ChapterToLatexDocument",
     "TextChapterToLatexDocument",
     "ScoreChapterToLatexDocument",
+    "ScoreListChapterToLatexDocument",
+    "PreciseScoreListChapterToLatexDocument",
 )
 
 
@@ -37,7 +41,10 @@ class ChapterToLatexDocument(core_converters.abc.Converter):
         self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
     ) -> tuple[str, ...]:
         return (
-            r"\fancyhead[CO,CE]{cdd: " + instrument_name + " part book}",
+            r"\fancyhead[CO,CE]{cdd no. "
+            + f"{chapter_to_convert.index}: "
+            + instrument_name
+            + " part book}",
             r"\fancyfoot{}",
         )
 
@@ -101,7 +108,13 @@ class TextChapterToLatexDocument(ChapterToLatexDocument):
 
 
 class ScoreChapterToLatexDocument(ChapterToLatexDocument):
-    def __init__(self, score_path: str, instruction_text: str = "", width: float = 1, hspace: str = None):
+    def __init__(
+        self,
+        score_path: str,
+        instruction_text: str = "",
+        width: float = 1,
+        hspace: str = None,
+    ):
         self.width = width
         self.instruction_text = instruction_text
         self.score_path = score_path
@@ -134,7 +147,7 @@ class ScoreChapterToLatexDocument(ChapterToLatexDocument):
         latex_document.append(pylatex.NoEscape(self.instruction_text))
         figure = pylatex.Figure(position="h!")
         if self._hspace:
-            figure.append(pylatex.NoEscape(r'\hspace{' + self._hspace + '}'))
+            figure.append(pylatex.NoEscape(r"\hspace{" + self._hspace + "}"))
         figure.append(
             pylatex.NoEscape(
                 r"\includegraphics[width="
@@ -145,5 +158,65 @@ class ScoreChapterToLatexDocument(ChapterToLatexDocument):
             )
         )
         latex_document.append(figure)
+        latex_document.append(pylatex.NoEscape(r"\clearpage"))
+        return latex_document
+
+
+class ScoreListChapterToLatexDocument(ScoreChapterToLatexDocument):
+    def __init__(self, *args, vspace: typing.Optional[str] = None, **kwargs):
+        self._vspace = vspace
+        super().__init__(*args, **kwargs)
+
+    def convert(
+        self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
+    ) -> pylatex.Document:
+        latex_document = ChapterToLatexDocument.convert(
+            self, chapter_to_convert, instrument_name
+        )
+        latex_document.append(pylatex.NoEscape(self.instruction_text))
+        figure = pylatex.Figure(position="h!")
+        for score_path in self.score_path:
+            if self._hspace:
+                figure.append(pylatex.NoEscape(r"\hspace{" + self._hspace + "}"))
+            figure.append(
+                pylatex.NoEscape(
+                    r"\includegraphics[width="
+                    + str(self.width)
+                    + r"\textwidth]{"
+                    + score_path
+                    + "}"
+                )
+            )
+            if self._vspace:
+                figure.append(pylatex.NoEscape(r"\vspace{" + self._vspace + "}"))
+        latex_document.append(figure)
+        latex_document.append(pylatex.NoEscape(r"\clearpage"))
+        return latex_document
+
+
+class PreciseScoreListChapterToLatexDocument(ScoreChapterToLatexDocument):
+    """Set width for each score individually"""
+
+    def convert(
+        self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
+    ) -> pylatex.Document:
+        latex_document = ChapterToLatexDocument.convert(
+            self, chapter_to_convert, instrument_name
+        )
+        latex_document.append(pylatex.NoEscape(self.instruction_text))
+        for score_path, width in self.score_path.items():
+            figure = pylatex.Figure(position="h!")
+            if self._hspace:
+                figure.append(pylatex.NoEscape(r"\hspace{" + self._hspace + "}"))
+            figure.append(
+                pylatex.NoEscape(
+                    r"\includegraphics[width="
+                    + str(width)
+                    + r"\textwidth]{"
+                    + score_path
+                    + "}"
+                )
+            )
+            latex_document.append(figure)
         latex_document.append(pylatex.NoEscape(r"\clearpage"))
         return latex_document

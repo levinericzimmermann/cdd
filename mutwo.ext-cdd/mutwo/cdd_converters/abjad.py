@@ -1,8 +1,13 @@
 import abjad
 
+from mutwo import abjad_converters
 from mutwo import core_converters
 
 __all__ = ("AbjadScoreListToLilyPondFile",)
+
+
+# Monkey patch abjad to fix bug: first grace note will have flags
+# in duration line mode
 
 
 class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):

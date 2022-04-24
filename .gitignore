@@ -104,11 +104,13 @@ ENV/
 # no hidden file
 .*
 
-# no audio files
+# no audio / video files
 *.wav
 *.aiff
 *.mp3
 *.ogg
+*.WAV
+*.m4a
 
 # no reaper peak files
 *.reapeaks
@@ -121,7 +123,8 @@ ENV/
 *.midi
 *.ly
 *.tex
-
+*.eps
+*.opus
 
 # no pianoteq binary
 pianoteq
@@ -148,9 +151,5 @@ develop-eggs/
 
 *.epub
 
-*.opus
-
-*.WAV
-
+# No pickled data
 *.pickled
-*.eps

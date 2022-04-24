@@ -162,7 +162,8 @@ class EventToSafeSynthesis(csound_converters.EventToSoundFile):
 0dbfs=1
 instr 1
     asig diskin2 p4
-    out asig
+    kenv linseg 0, 0.01, 1, p3 - 0.02, 1, 0.01, 0
+    out asig * kenv
 endin
 """
 
@@ -181,6 +182,20 @@ endin
             ),
         )
 
+    def _submit_conversion(
+        self,
+        event_to_render_with_synthesizer: core_events.abc.Event,
+        synthesizer_sound_file_path: str,
+        *args,
+        **kwargs,
+    ):
+        return self._event_to_sound_file.convert(
+            event_to_render_with_synthesizer,
+            synthesizer_sound_file_path,
+            *args,
+            **kwargs,
+        )
+
     def _render_synthesizer(
         self,
         event_to_render_with_synthesizer_tuple: tuple[core_events.abc.Event, ...],
@@ -190,8 +205,9 @@ endin
             event_to_render_with_synthesizer_tuple, synthesizer_sound_file_path_tuple
         ):
             if event_to_render_with_synthesizer is not None:
-                self._event_to_sound_file.convert(
-                    event_to_render_with_synthesizer, synthesizer_sound_file_path
+                self._submit_conversion(
+                    event_to_render_with_synthesizer,
+                    synthesizer_sound_file_path,
                 )
 
     def _save_csound_orchestra(self):
@@ -202,10 +218,11 @@ endin
         self, synthesizer_sound_file_path_tuple: tuple[str, ...]
     ):
         for sound_file_path in synthesizer_sound_file_path_tuple:
-            try:
-                os.remove(sound_file_path)
-            except TypeError:
-                pass
+            if sound_file_path:
+                try:
+                    os.remove(sound_file_path)
+                except FileNotFoundError:
+                    pass
 
     def _remove_csound_orchestra(self):
         os.remove(self.csound_orchestra_path)
@@ -220,6 +237,13 @@ endin
             event_to_render_with_synthesizer_tuple, synthesizer_sound_file_path_tuple
         )
         self._save_csound_orchestra()
+        # Ensure that even when some sound files couldn't be rendered,
+        # the converter can still render the complete sound file
+        # (avoid csound errors).
+        for simple_event in csound_concatenation_event:
+            if hasattr(simple_event, "sound_file_path"):
+                if not os.path.exists(simple_event.sound_file_path):
+                    del simple_event.sound_file_path
         super().convert(csound_concatenation_event, sound_file_path)
         self._remove_temporary_sound_files(synthesizer_sound_file_path_tuple)
         self._remove_csound_orchestra()
@@ -248,10 +272,10 @@ class EventToSafeSingingSynthesis(EventToSafeSynthesis):
 instr 1
     ; 1 second skip time because isis always starts one second late!
     asig diskin2 p4, 1, 1
-    out asig
+    kenv linseg 0, 0.02, 1, p3 - 0.04, 1, 0.02, 0
+    out asig * kenv
 endin
 """
-
 
     def __init__(
         self,
@@ -264,6 +288,8 @@ endin
             "--cfg_style etc/isis-cfg-style.cfg",
             "--seed 100",
         ),
+        *args,
+        **kwargs,
     ):
         def is_rest(simple_event: core_events.SimpleEvent) -> bool:
             try:
@@ -284,7 +310,12 @@ endin
                 return True
             return pitch is None or volume is None or volume.amplitude == 0
 
-        super().__init__(event_to_singing_synthesis, is_rest)
+        super().__init__(event_to_singing_synthesis, is_rest, *args, **kwargs)
+
+    def _submit_conversion(self, *args, **kwargs):
+        return super()._submit_conversion(
+            *args, score_path=f".isis_score_{uuid.uuid4()}.cfg", **kwargs
+        )
 
     def convert(self, event_to_convert: core_events.abc.Event, *args, **kwargs):
         return super().convert(event_to_convert, *args, **kwargs)

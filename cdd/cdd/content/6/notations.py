@@ -184,13 +184,7 @@ class SimultaneousEventToAbjadScore(
                     ),
                     last_leaf,
                 )
-                abjad.attach(
-                    abjad.LilyPondLiteral(
-                        r"\undo \omit Staff.BarLine", format_slot="after"
-                    ),
-                    last_leaf,
-                )
-                abjad.attach(abjad.BarLine("|."), last_leaf)
+                cdd.utilities.add_last_bar_line(last_leaf)
             except Exception:
                 pass
         return abjad_score
