@@ -77,7 +77,7 @@ class CentDeviation(
                 prefix = "-"
             adjusted_deviation = round(abs(self.deviation))
             markup = abjad.Markup(
-                "\\tiny { " + f"{prefix}{adjusted_deviation} ct" + " } ", direction="up"
+                "\\tiny { " + f"{prefix}{adjusted_deviation}" + " } ", direction="up"
             )
             abjad.attach(
                 markup,
