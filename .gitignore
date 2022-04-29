@@ -123,6 +123,8 @@ ENV/
 *.midi
 *.ly
 *.tex
+*.texi
+*.count
 *.eps
 *.opus
 

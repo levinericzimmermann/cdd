@@ -1,9 +1,12 @@
 import datetime
+import itertools
 import typing
 
 import abjad
 import gradient_free_optimizers
 
+from mutwo import common_generators
+from mutwo import core_constants
 from mutwo import core_events
 from mutwo import music_converters
 
@@ -167,3 +170,34 @@ def add_last_bar_line(last_leaf: abjad.Leaf, barline: str = "|."):
         ),
         last_leaf,
     )
+
+
+def interlock_long_and_short(
+    item_tuple: tuple[core_constants.Real, ...]
+) -> tuple[core_constants.Real, ...]:
+    if not item_tuple:
+        return tuple([])
+    sorted_item_tuple = list(sorted(item_tuple))
+    item_count = len(item_tuple)
+    center_index = int(item_count // 2)
+    short_item_list, long_item_list = (
+        sorted_item_tuple[:center_index],
+        sorted_item_tuple[center_index:],
+    )
+    # We want to start with the longest item
+    long_item_list = list(reversed(long_item_list))
+    grap_position_cycle = itertools.cycle(common_generators.reflected_binary_code(2, 2))
+    solution = []
+    while short_item_list or long_item_list:
+        grap_position_short, grap_position_long = next(grap_position_cycle)
+        for grap_position, item_list in (
+            (grap_position_long, long_item_list),
+            (grap_position_short, short_item_list),
+        ):
+            if item_list:
+                index = -grap_position
+                item = item_list[index]
+                solution.append(item)
+                del item_list[index]
+    assert len(solution) == len(item_tuple)
+    return tuple(solution)

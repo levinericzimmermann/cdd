@@ -1,75 +1,138 @@
+import dataclasses
+
 import abjad
 import quicktions as fractions
 
 from mutwo import core_events
-from mutwo import mmml_converters
 from mutwo import music_events
 from mutwo import music_parameters
 
 from cdd import utilities
 
-from . import CLAVICHORD
 
-pedal_tone_tuple = tuple(
-    music_parameters.JustIntonationPitch(ratio) for ratio in "1/2 1/3 3/8".split(" ")
-)
+@dataclasses.dataclass(frozen=True)
+class LongNote(object):
+    sequential_event: core_events.SequentialEvent[music_events.NoteLike]
+    start: float
+    duration: float
 
-microtonal_pitch_sequence_tuple = tuple(
-    mmml_converters.MMMLEventsConverter(
-        mmml_converters.MMMLPitchesConverter(
-            mmml_converters.MMMLSingleJIPitchConverter()
+    @property
+    def end(self) -> float:
+        return self.start + self.duration
+
+    def get_text_content(self, formatted_start: str, formatted_end: str) -> str:
+        return f"from {formatted_start} to {formatted_end}"
+
+    def get_sequential_event(self) -> core_events.SequentialEvent:
+        sequential_event = self.sequential_event.copy()
+        text_content = self.get_text_content(
+            *[
+                utilities.duration_in_seconds_to_readable_duration(time)
+                for time in (self.start, self.end)
+            ]
         )
-    )
-    .convert(mmml_string)
-    .get_parameter("pitch_list")
-    for mmml_string in (
-        "7-:1 3++ 7- 7+3-",
-        "3--:0 7+ 3+7- 7+",
-        "11-:1 3+ 7+3-- 3+",
-    )
-)
+        sequential_event[0].notation_indicator_collection.markup.content = abjad.Markup(
+            # r"\typewriter { \smaller { " f"{text_content}" r"} }"
+            r"\typewriter { \normalsize { " f"{text_content}" r"} }"
+        )
+        sequential_event[0].notation_indicator_collection.markup.direction = "^"
+        return sequential_event
 
-pedal_tone_sequential_event_tuple = tuple(
-    core_events.SequentialEvent(
-        [
-            music_events.NoteLike(
-                pedal_tone,
-                duration=fractions.Fraction(
-                    1,
-                    1,
-                ),
-            )
-        ]
-    )
-    for pedal_tone in pedal_tone_tuple
-)
 
-pedal_tone_sequential_event = core_events.SequentialEvent(
-    [music_events.NoteLike(list(pedal_tone_tuple), duration=fractions.Fraction(1, 1))]
-)
+@dataclasses.dataclass(frozen=True)
+class GlissandoNote(LongNote):
+    def get_sequential_event(self) -> core_events.SequentialEvent:
+        sequential_event = super().get_sequential_event()
+        sequential_event[0].playing_indicator_collection.irregular_glissando = True
+        return sequential_event
 
-pedal_tone_sequential_event[
-    0
-].notation_indicator_collection.rehearsal_mark.markup = abjad.Markup(
-    r"\small { \caps { pedal tones } }"
-)
 
-microtonal_movement_sequential_event_tuple = tuple(
-    core_events.SequentialEvent(
-        [
-            music_events.NoteLike(pitch, duration=fractions.Fraction(1, 1))
-            for pitch in microtonal_pitch_sequence
-        ]
-    )
-    for microtonal_pitch_sequence in microtonal_pitch_sequence_tuple
-)
+@dataclasses.dataclass(frozen=True)
+class TimeSpanLongNote(LongNote):
+    def get_text_content(self, formatted_start: str, formatted_end: str) -> str:
+        return f"within {formatted_start} to {formatted_end}"
 
-instruction_text = f"""
-freely choose from given material of pedal notes, hyperchromatic melodies and rising or falling scales;
-vary them ad. lib. (e.g.
-play a very long and very quiet tone from pedal note material;
-play slow ostinati with two alternating pedal notes;
-fill rests between clavichord and soprano with hyperchromatic melodies;
-listen to beatings between hyperchromatic melodies and sine waves).
-duration: {utilities.duration_in_seconds_to_readable_duration(CLAVICHORD.sequential_event_absolute_time_tuple[-1] + CLAVICHORD.line_duration)} minutes.
+
+instruction_text_sine = r"""
+start \& end at given times.
+slowly fade in \& slowly fade out.
+almost no overtones should be audible (imitate a sine tone).
 """
+
+# Long sine-like whistle notes at the beginning
+sine_note_tuple = tuple(
+    LongNote(
+        core_events.SequentialEvent(
+            [
+                music_events.NoteLike(
+                    pitch, duration=fractions.Fraction(1, 1), volume="ppp"
+                )
+            ]
+        ),
+        start,
+        duration,
+    )
+    for pitch, start, duration in (("3/1", 40, 35), ("8/3", (1 * 60) + 25, 25))
+)
+
+instruction_text_glissando = r"""
+start \& end at given times.
+make irregular glissandi (circle the written pitch).
+be closer to nature than music (e.g. avoid intention).
+short pauses between sounds are acceptable.
+"""
+
+# one glissando note after long rest
+glissando_note_tuple = (
+    GlissandoNote(
+        core_events.SequentialEvent(
+            [
+                music_events.NoteLike(
+                    "3/1", duration=fractions.Fraction(1, 1), volume="mp"
+                )
+            ]
+        ),
+        (2 * 60) + 50,
+        60,
+    ),
+)
+
+
+instruction_text_unisono = r"""
+start at given time; play with singer.
+dynamics should be equally balanced.
+"""
+
+# Then: unisono event with soprano (event is defined in content/__init__.py)
+
+# repeat pattern up to 4 times within given time span.
+instruction_text_slap = r"""
+repeat pattern up to 4 times.
+use slap tongue.
+use different tempi when repeating the pattern.
+"""
+
+
+# slaps
+slap_sequential_event = core_events.SequentialEvent(
+    [
+        music_events.NoteLike(pitch, duration=fractions.Fraction(1, 2), volume="p")
+        for pitch in ("3/4", "2/3")
+    ]
+)
+for note_like in slap_sequential_event:
+    note_like.playing_indicator_collection
+
+slap_long_note = TimeSpanLongNote(slap_sequential_event, (6 * 60) + 10, 45)
+
+# finally there are unisonos again with the singer
+# we will use the same instruction like previously
+
+clarinet_unisono_interval_tuple = (
+    music_parameters.JustIntonationPitch("1/1"),
+    music_parameters.JustIntonationPitch("4/5"),
+    music_parameters.JustIntonationPitch("1/1"),
+    music_parameters.JustIntonationPitch("3/4"),
+)
+
+unisono_part_index_tuple = (6, 7, 8, 10)

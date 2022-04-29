@@ -25,6 +25,7 @@
 # at the "sonho" parts of the singing.
 
 import collections
+import copy
 import functools
 import itertools
 import operator
@@ -35,7 +36,6 @@ import ranges
 import quicktions as fractions
 
 from mutwo import common_generators
-from mutwo import core_constants
 from mutwo import core_converters
 from mutwo import core_events
 from mutwo import core_utilities
@@ -49,37 +49,6 @@ from . import SOPRANO
 
 
 ClavichordLine = core_events.SimultaneousEvent[core_events.SequentialEvent]
-
-
-def interlock_long_and_short(
-    item_tuple: tuple[core_constants.Real, ...]
-) -> tuple[core_constants.Real, ...]:
-    if not item_tuple:
-        return tuple([])
-    sorted_item_tuple = list(sorted(item_tuple))
-    item_count = len(item_tuple)
-    center_index = int(item_count // 2)
-    short_item_list, long_item_list = (
-        sorted_item_tuple[:center_index],
-        sorted_item_tuple[center_index:],
-    )
-    # We want to start with the longest item
-    long_item_list = list(reversed(long_item_list))
-    grap_position_cycle = itertools.cycle(common_generators.reflected_binary_code(2, 2))
-    solution = []
-    while short_item_list or long_item_list:
-        grap_position_short, grap_position_long = next(grap_position_cycle)
-        for grap_position, item_list in (
-            (grap_position_long, long_item_list),
-            (grap_position_short, short_item_list),
-        ):
-            if item_list:
-                index = -grap_position
-                item = item_list[index]
-                solution.append(item)
-                del item_list[index]
-    assert len(solution) == len(item_tuple)
-    return tuple(solution)
 
 
 class DataToClavichordLine(core_converters.abc.Converter):
@@ -336,7 +305,7 @@ class DataToClavichordLine(core_converters.abc.Converter):
             elif fitness_candidate == fitness:
                 if len(set(candidate)) > len(set(champion)):
                     champion = candidate
-        chord_duration_tuple = interlock_long_and_short(champion)
+        chord_duration_tuple = cdd.utilities.interlock_long_and_short(champion)
         if last_chord_duration_is_longest:
             chord_duration_tuple = tuple(reversed(chord_duration_tuple))
         return chord_duration_tuple
@@ -607,7 +576,7 @@ class DataToClavichordLine(core_converters.abc.Converter):
             music_parameters.JustIntonationPitch("3/4"),
         ],
         chord_rhythm_range: ranges.Range = ranges.Range(
-            fractions.Fraction(1, 4), fractions.Fraction(1, 1)
+            fractions.Fraction(1, 4), fractions.Fraction(2, 1)
         ),
         pitch_count_range: ranges.Range = ranges.Range(2, 5),
         add_rest_after_last_block: bool = True,
@@ -779,8 +748,10 @@ def _apply_grace_notes(
             )
             if is_previous_event_rest:
                 likelihood *= 0.6
-            if hasattr(note_like_or_simple_event, "pitch_list") and (
-                pitch_list := note_like_or_simple_event.pitch_list
+            if (
+                hasattr(note_like_or_simple_event, "pitch_list")
+                and (pitch_list := note_like_or_simple_event.pitch_list)
+                and len(pitch_list) > 1
             ):
                 if random.random() < likelihood:
                     add_grace_note_sequential_event_to_note_like(
@@ -868,43 +839,70 @@ ATTRIBUTE_TO_ENVELOPE_DICT = {
     "event_count": core_events.Envelope(
         [
             [0, 7],
-            [0.2, 4],
+            [0.1, 6],
+            [0.2, 2],
             [0.25, 0],
             [0.3, 0],
             [0.34, 5],
             [0.4, 4],
-            [0.45, 4],
+            [0.43, 19],
             [0.5, 0],
             [0.57, 0],
             [0.63, 0],
-            [0.67, 6],
-            [0.75, 6],
+            [0.67, 3],
+            [0.75, 4],
             [0.79, 6],
             [0.83, 0],
             [1, 0],
         ]
     ),
     "density": core_events.Envelope(
-        [[0, 1], [0.2, 0.55], [0.34, 0.65], [0.5, 0.4], [0.5, 0.7], [0.6, 0.9], [1, 0.8]]
+        [
+            [0, 1],
+            [0.2, 0.55],
+            [0.34, 0.65],
+            [0.5, 0.4],
+            [0.5, 0.7],
+            [0.6, 0.9],
+            [1, 0.8],
+        ]
     ),
     # where 1 equals highest pitch and 0 equals lowest pitch
     "ambitus_high_percentage": core_events.Envelope(
-        [[0, 0.7], [0.4, 0.55], [0.5, 0.285], [0.6, 0.8], [0.65, 0.8], [0.66, 1], [1, 1]]
+        [
+            [0, 0.7],
+            [0.4, 0.55],
+            [0.5, 0.285],
+            [0.6, 0.8],
+            [0.65, 0.8],
+            [0.66, 1],
+            [1, 1],
+        ]
     ),
     "ambitus_low_percentage": core_events.Envelope(
         [[0, 0.1], [0.4, 0], [0.6, 0.1], [0.65, 0.4], [0.66, 0], [0.7, 0], [1, 0]]
     ),
     # pitch count min // max
     "pitch_count_maxima": core_events.Envelope(
-        [[0, 6], [0.3, 7], [0.4, 7], [0.55, 3], [0.6, 3], [0.7, 7], [1, 3]]
+        [
+            [0, 6],
+            [0.1, 5],
+            [0.2, 4],
+            [0.3, 7],
+            [0.4, 7],
+            [0.55, 3],
+            [0.6, 3],
+            [0.7, 7],
+            [1, 3],
+        ]
     ),
     "pitch_count_minima": core_events.Envelope(
-        [[0, 2], [0.3, 3], [0.4, 2], [0.5, 1], [0.6, 1], [0.7, 3], [1, 1]]
+        [[0, 2], [0.2, 2], [0.3, 3], [0.4, 2], [0.5, 1], [0.6, 1], [0.7, 3], [1, 1]]
     ),
 }
 
 grace_note_likelihood_envelope = core_events.Envelope(
-    [[0, 0.4], [0.3, 0.65], [0.5, 0.4], [0.7, 0.8], [1, 0.7]]
+    [[0, 0.5], [0.3, 0.45], [0.38, 0.4], [0.43, 0.1], [0.5, 0.3], [0.7, 0.5], [1, 0.4]]
 )
 
 line_duration = 45
@@ -917,6 +915,28 @@ sequential_event_tuple[0][2].duration *= fractions.Fraction(3, 2)
 sequential_event_tuple[0][3].duration *= fractions.Fraction(1, 2)
 sequential_event_tuple[0][4].duration *= fractions.Fraction(1, 2)
 sequential_event_tuple[0][5].duration *= fractions.Fraction(3, 2)
+
+sequential_event_tuple[1][1].pitch_list = []
+sequential_event_tuple[1][1].grace_note_sequential_event = core_events.SequentialEvent(
+    []
+)
+# sequential_event_tuple[1][6].pitch_list = []
+# sequential_event_tuple[1][6].pitch_list = []
+sequential_event_tuple[1][7].pitch_list = []
+
+
+sequential_event_tuple[5][4].pitch_list = []
+sequential_event_tuple[5][14].duration += sequential_event_tuple[5][15].duration
+del sequential_event_tuple[5][15]
+
+offset = 0
+for event in sequential_event_tuple[5][12:15]:
+    sequential_event_tuple[6].squash_in(offset, copy.deepcopy(event))
+    offset += event.duration
+    event.pitch_list = []
+
+sequential_event_tuple[6].append(core_events.SimpleEvent(fractions.Fraction(4, 1)))
+
 
 arpeggio_activity = 3
 

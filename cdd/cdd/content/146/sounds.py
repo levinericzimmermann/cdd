@@ -12,6 +12,7 @@ from mutwo import isis_converters
 from mutwo import mbrola_converters
 from mutwo import midi_converters
 from mutwo import music_converters
+from mutwo import music_events
 from mutwo import music_parameters
 
 import cdd
@@ -32,8 +33,8 @@ def render_soprano(chapter: cdd.chapters.Chapter):
                 simple_event_to_consonant_tuple=lambda simple_event: simple_event.lyric.consonant_tuple,
                 simple_event_to_pitch=simple_event_to_pitch,
             ),
-            "--cfg_synth etc/isis-cfg-synth.cfg",
-            "--cfg_style etc/isis-cfg-style.cfg",
+            "--cfg_synth etc/isis/isis-cfg-synth.cfg",
+            "--cfg_style etc/isis/isis-cfg-style.cfg",
             # "-sv EL",
             "-sv MS",
             "--seed 100",
@@ -98,38 +99,8 @@ def render_clarinet(chapter: cdd.chapters.Chapter):
 
     event_to_midi_file = midi_converters.EventToMidiFile()
 
-    for (pedal_tone_sequential_event_index, pedal_tone_sequential_event) in enumerate(
-        chapter.CLARINET.pedal_tone_sequential_event_tuple
-    ):
-        pedal_tone_sequential_event = pedal_tone_sequential_event.copy()
-        pedal_tone_sequential_event.set_parameter("volume", "p")
-        pedal_tone_sequential_event.duration *= 24
-        event_to_midi_file.convert(
-            pedal_tone_sequential_event,
-            f"{base_midi_file_path}_pedal_{pedal_tone_sequential_event_index}.mid",
-        )
-
-    for (microtonal_pitch_sequence_index, microtonal_sequential_event) in enumerate(
-        chapter.CLARINET.microtonal_movement_sequential_event_tuple
-    ):
-        for direction_index, microtonal_pitch_sequence in enumerate(
-            (
-                microtonal_sequential_event,
-                core_events.SequentialEvent(
-                    list(reversed(microtonal_sequential_event))
-                ),
-            )
-        ):
-            microtonal_pitch_sequence = microtonal_pitch_sequence.copy()
-            microtonal_pitch_sequence.set_parameter("volume", "p")
-            microtonal_pitch_sequence.duration *= 12
-            event_to_midi_file.convert(
-                microtonal_pitch_sequence,
-                f"{base_midi_file_path}_hyperchromatic_{microtonal_pitch_sequence_index}_{direction_index}.mid",
-            )
-
-    for soprano_event_index, soprano_sequential_event in enumerate(
-        chapter.SOPRANO.sequential_event_tuple
+    for event_index, simultaneous_event in enumerate(
+        chapter.soprano_and_clarinet_unisono_simultaneous_event_tuple
     ):
         tempo_converter = core_converters.TempoConverter(
             expenvelope.Envelope.from_points(
@@ -143,13 +114,12 @@ def render_clarinet(chapter: cdd.chapters.Chapter):
                 )
             )
         )
-        soprano_sequential_event = soprano_sequential_event.copy()
-        soprano_sequential_event = tempo_converter.convert(soprano_sequential_event)
+        soprano_sequential_event = tempo_converter.convert(simultaneous_event[1])
         soprano_sequential_event.set_parameter("volume", "p")
         soprano_sequential_event.duration *= 2
         event_to_midi_file.convert(
             soprano_sequential_event,
-            f"{base_midi_file_path}_soprano_{soprano_event_index}.mid",
+            f"{base_midi_file_path}_soprano_{event_index}.mid",
         )
 
 
@@ -202,7 +172,8 @@ def render_clavichord(chapter: cdd.chapters.Chapter):
                     core_events.SimpleEvent(rest_duration)
                 )
         new_voice_sequential_event.tie_by(
-            lambda event0, event1: cdd.utilities.is_rest(event0) and cdd.utilities.is_rest(event1)
+            lambda event0, event1: cdd.utilities.is_rest(event0)
+            and cdd.utilities.is_rest(event1)
         )
         voice.extend(to_mbrola_friendly(new_voice_sequential_event.copy()))
 
@@ -215,13 +186,45 @@ def render_clavichord(chapter: cdd.chapters.Chapter):
         )
         clavichord.extend(new_sequential_event)
 
-    voice.tie_by(lambda event0, event1: cdd.utilities.is_rest(event0) and cdd.utilities.is_rest(event1))
+    voice.tie_by(
+        lambda event0, event1: cdd.utilities.is_rest(event0)
+        and cdd.utilities.is_rest(event1)
+    )
 
     event_to_midi_file.convert(clavichord, midi_file_path)
-    sequential_event_to_speaking_synthesis(voice, sound_file_path)
+    # sequential_event_to_speaking_synthesis(voice, sound_file_path)
+
+
+def render_noise(chapter: cdd.chapters.Chapter):
+    instrument = "noise"
+    midi_file_path = chapter.get_midi_path(instrument)
+    event_to_midi_file = midi_converters.EventToMidiFile()
+
+    sequential_event = core_converters.TempoConverter(
+        expenvelope.Envelope.from_points([0, 60 / 2])
+    ).convert(
+        core_events.SequentialEvent(
+            [
+                music_events.NoteLike("c", start1 - start0)
+                for start0, start1 in zip(
+                    (0,) + chapter.NOISE.absolute_time_tuple,
+                    chapter.NOISE.absolute_time_tuple
+                    + (chapter.NOISE.absolute_time_tuple[-1] + 1,),
+                )
+            ]
+        )
+    )
+
+    sequential_event[0].pitch_list = []
+
+    event_to_midi_file.convert(
+        sequential_event,
+        midi_file_path,
+    )
 
 
 def main(chapter: cdd.chapters.Chapter):
+    render_noise(chapter)
     render_clavichord(chapter)
     render_clarinet(chapter)
-    render_soprano(chapter)  # a bit slowly, therefore only render if necessary
+    # render_soprano(chapter)  # a bit slowly, therefore only render if necessary

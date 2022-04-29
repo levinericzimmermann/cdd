@@ -1,11 +1,13 @@
-import itertools
+# import itertools
 import warnings
 
 import abjad
+import quicktions as fractions
 
 from mutwo import abjad_converters
 from mutwo import abjad_parameters
 from mutwo import cdd_parameters
+from mutwo import music_parameters
 
 
 # Monkey patch Arpeggio process_leaf, so that
@@ -86,8 +88,61 @@ class CentDeviation(
         return leaf
 
 
+class IrregularGlissando(
+    music_parameters.abc.ExplicitPlayingIndicator,
+    abjad_parameters.abc.BangFirstAttachment,
+):
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        leaf = abjad.mutate.copy(leaf)
+
+        fancy_glissando = r"""
+\fancy-gliss
+        #'(
+            (1 3 0.2 2 1 1)
+            (2 -2)
+            (3 2)
+            (4 1)
+            (5 2.5)
+            (6 0)
+            (7 0 8 6 12 0))
+"""
+        abjad.attach(
+            abjad.LilyPondLiteral(fancy_glissando, format_slot="before"),
+            leaf,
+        )
+
+        if hasattr(leaf, "note_head"):
+            pitch = leaf.note_head.written_pitch
+        elif hasattr(leaf, "note_heads"):
+            pitch = leaf.note_heads[0].written_pitch
+        else:
+            raise NotImplementedError()
+
+        hidden_leaf = abjad.Note(pitch, fractions.Fraction(1, 64))
+        omit = r"\once \omit"
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                (
+                    f"{omit} Accidental "
+                    f"{omit} NoteHead "
+                    f"{omit} Beam "
+                    f"{omit} Stem "
+                    f"{omit} Flag "
+                ),
+                format_slot="before",
+            ),
+            hidden_leaf,
+        )
+
+        voice = abjad.Voice([leaf, hidden_leaf])
+
+        abjad.attach(abjad.Glissando(), leaf)
+
+        return voice
+
+
 # override mutwo default value
 abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE = (
     abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE
-    + (CentDeviation,)
+    + (CentDeviation, IrregularGlissando)
 )

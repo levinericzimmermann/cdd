@@ -9,6 +9,8 @@ from mutwo import core_converters
 
 __all__ = (
     "ChapterToLatexDocument",
+    "TableChapterToLatexDocument",
+    "PDFChapterToLatexDocument",
     "TextChapterToLatexDocument",
     "ScoreChapterToLatexDocument",
     "ScoreListChapterToLatexDocument",
@@ -68,6 +70,76 @@ class ChapterToLatexDocument(core_converters.abc.Converter):
         return document
 
 
+class TableChapterToLatexDocument(ChapterToLatexDocument):
+    def __init__(
+        self,
+        instruction_text: str,
+        table: tuple[tuple[str, ...], ...],
+        text_size: pylatex.base_classes.latex_object._CreatePackages = pylatex.LargeText,
+        row_count: int = 20,
+        table_per_page_count: int = 2,
+        vspace: str = "4cm",
+        hspace: str = "7cm",
+        font: str = "\\tt",
+        column_space: str = "0.5cm",
+        row_height: float = 2,
+    ):
+        self.instruction_text = instruction_text
+        self.text_size = text_size
+        self.column_count = len(table[0])
+        self.row_count = row_count
+        self.table_per_page_count = table_per_page_count
+        self.table = table
+        self.vspace = vspace
+        self.hspace = hspace
+        self.font = font
+        self.column_space = column_space
+        self.row_height = row_height
+
+    def convert(self, *args, **kwargs) -> pylatex.Document:
+        latex_document = super().convert(*args, **kwargs)
+        latex_document.append(pylatex.NoEscape(self.instruction_text))
+        for _ in range(4):
+            latex_document.append(pylatex.NoEscape(r"\\"))
+        latex_document.append(pylatex.NoEscape(r"\vspace{" + self.vspace + "}"))
+        latex_document.append(pylatex.NoEscape(r"\hspace{" + self.hspace + "}"))
+        row_iterator = iter(self.table)
+        is_running = True
+        while is_running:
+            tabular = pylatex.Tabular(
+                table_spec="c" * self.column_count,
+                col_space=self.column_space,
+                row_height=self.row_height,
+            )
+            for _ in range(self.row_count):
+                try:
+                    row = next(row_iterator)
+                except StopIteration:
+                    is_running = False
+                    break
+                else:
+                    tabular.add_row(
+                        *[
+                            self.text_size(pylatex.NoEscape(f"{self.font} {item}"))
+                            for item in row
+                        ]
+                    )
+            latex_document.append(tabular)
+        return latex_document
+
+
+class PDFChapterToLatexDocument(ChapterToLatexDocument):
+    """Useful if you want to include pdf files"""
+
+    def get_package_name_and_options_tuple(
+        self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
+    ) -> tuple[tuple[str, list[pylatex.NoEscape]], ...]:
+        package_name_and_options_tuple = super().get_package_name_and_options_tuple(
+            chapter_to_convert, instrument_name
+        )
+        return package_name_and_options_tuple + (("graphicx", []),)
+
+
 class TextChapterToLatexDocument(ChapterToLatexDocument):
     def __init__(self, text: str):
         self.text = text
@@ -107,7 +179,7 @@ class TextChapterToLatexDocument(ChapterToLatexDocument):
         return latex_document
 
 
-class ScoreChapterToLatexDocument(ChapterToLatexDocument):
+class ScoreChapterToLatexDocument(PDFChapterToLatexDocument):
     def __init__(
         self,
         score_path: str,
@@ -119,14 +191,6 @@ class ScoreChapterToLatexDocument(ChapterToLatexDocument):
         self.instruction_text = instruction_text
         self.score_path = score_path
         self._hspace = hspace
-
-    def get_package_name_and_options_tuple(
-        self, chapter_to_convert: cdd_interfaces.abc.Chapter, instrument_name: str
-    ) -> tuple[tuple[str, list[pylatex.NoEscape]], ...]:
-        package_name_and_options_tuple = super().get_package_name_and_options_tuple(
-            chapter_to_convert, instrument_name
-        )
-        return package_name_and_options_tuple + (("graphicx", []),)
 
     def get_preamble_tuple(self, *args, **kwargs):
         preamble_tuple = super().get_preamble_tuple(*args, **kwargs)

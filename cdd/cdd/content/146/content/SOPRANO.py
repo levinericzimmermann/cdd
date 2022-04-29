@@ -75,7 +75,8 @@ fado_part_sequential_event_tuple = tuple(
     for mmml_string in fado_part_mmml_tuple
 )
 
-fado_part_sequential_event_tuple[4].set_parameter("pitch_list", "3/2")
+# fado_part_sequential_event_tuple[4].set_parameter("pitch_list", "3/2")
+fado_part_sequential_event_tuple[4].set_parameter("pitch_list", "2/1")
 fado_part_sequential_event_tuple[6].set_parameter("pitch_list", "4/3")
 fado_part_sequential_event_tuple[7].set_parameter("pitch_list", "3/2")
 fado_part_sequential_event_tuple[9].set_parameter(
@@ -171,6 +172,7 @@ instruction_text = f"""
 start phrases at given time (use stop watch); vary tempo from {tempo_range.start} to {tempo_range.end} bpm (= 1/4).
 take rests ({repetition_rest_duration_range.start} to {repetition_rest_duration_range.end} seconds) between repetitions of phrases.
 timbre is reserved, almost limp; embed yourself into the surrounding field.
+phrases with clarinet are always only played once.
 """
 
 phrase_to_remove_index_tuple = (

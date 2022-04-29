@@ -2,6 +2,7 @@ import typing
 
 import abjad
 import expenvelope
+import pylatex
 
 from mutwo import abjad_converters
 from mutwo import cdd_converters
@@ -22,7 +23,6 @@ class SequentialEventToAbjadVoice(abjad_converters.SequentialEventToAbjadVoice):
             *args,
             mutwo_pitch_to_abjad_pitch_converter=abjad_converters.MutwoPitchToHEJIAbjadPitch(),
             # No need for dynamics here
-            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
             tempo_envelope_to_abjad_attachment_tempo_converter=None,
             **kwargs,
         )
@@ -72,15 +72,21 @@ class SopranoSequentialEventToAbjadScore(SequentialEventToAbjadStaff):
                 time_signature_sequence=time_signature_sequence,
                 tempo_envelope=tempo_envelope,
             ),
+            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
             **kwargs,
         )
 
     def convert(
-        self, event_to_convert, repetition_count: int, absolute_time_in_seconds: float
+        self,
+        event_to_convert,
+        repetition_count: int,
+        absolute_time_in_seconds: float,
+        add_repetition_count: bool = True,
+        start_size: str = "smaller",
     ) -> abjad.Score:
         abjad_staff = super().convert(event_to_convert)
         start_time_markup = abjad.Markup(
-            r"\typewriter { \smaller { start at "
+            f"\\typewriter {{ \\{start_size} {{ start at "
             f"{cdd.utilities.duration_in_seconds_to_readable_duration(absolute_time_in_seconds)}"
             "} }",
             direction="up",
@@ -89,19 +95,85 @@ class SopranoSequentialEventToAbjadScore(SequentialEventToAbjadStaff):
         abjad.attach(start_time_markup, first_leaf)
         if repetition_count > 1:
             abjad.attach(abjad.Repeat(repeat_count=repetition_count), abjad_staff[0])
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                (
-                    f"\\set Staff.instrumentName = \\markup {{ "
-                    r" \normalsize { \caps {"
-                    f"sing {repetition_count}x }} }}"
-                    r"}"
-                )
-            ),
-            first_leaf,
-        )
+        if add_repetition_count:
+            abjad.attach(
+                abjad.LilyPondLiteral(
+                    (
+                        f"\\set Staff.instrumentName = \\markup {{ "
+                        # r" \normalsize { \caps {"
+                        r" \smaller { \typewriter {"
+                        f"sing {repetition_count}x }} }}"
+                        r"}"
+                    )
+                ),
+                first_leaf,
+            )
         abjad_score = abjad.Score([abjad_staff])
         return abjad_score
+
+
+class SopranoAndClarinetSimultaneousEventToAbjadScore(
+    SopranoSequentialEventToAbjadScore
+):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._clarinet_sequential_event_to_abjad_staff = SequentialEventToAbjadStaff(
+            sequential_event_to_quantized_abjad_container_converter=self._sequential_event_to_quantized_abjad_container_converter,
+            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
+        )
+
+    def convert(
+        self, event_to_convert, *args, adjust_clarinet: bool = False, **kwargs
+    ) -> abjad.Score:
+        soprano, clarinet = event_to_convert
+
+        # Either write transposed or not
+        if adjust_clarinet:
+            start_size = "large"
+            clarinet = cdd.utilities.clarinet_event_to_notatable_clarinet_event(
+                clarinet
+            )
+        else:
+            start_size = "smaller"
+
+        score_soprano = super().convert(
+            soprano, *args, add_repetition_count=False, start_size=start_size, **kwargs
+        )
+
+        score_soprano[0].name = "soprano"
+        staff_clarinet = self._clarinet_sequential_event_to_abjad_staff.convert(
+            clarinet
+        )
+        staff_clarinet.name = "clarinet"
+        score_soprano.append(staff_clarinet)
+
+        # Make other voice smaller
+        index_to_magnify = not adjust_clarinet
+        staff_to_magnify = score_soprano[index_to_magnify]
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                "\\magnifyStaff #(magstep -3.5)",
+                format_slot="before",
+            ),
+            abjad.get.leaf(staff_to_magnify, 0),
+        )
+
+        # Add instrument name markups
+        abjad.detach(abjad.MarginMarkup, abjad.get.leaf(score_soprano[0][0], 0))
+
+        for instrument_name, staff in zip(("soprano", "clarinet"), score_soprano):
+            abjad.attach(
+                abjad.LilyPondLiteral(
+                    (
+                        r"\set Staff.instrumentName = \markup { \smaller { \typewriter {"
+                        f"{instrument_name}"
+                        r"} } }"
+                    )
+                ),
+                abjad.get.leaf(staff, 0),
+            )
+
+        return score_soprano
 
 
 class ClavichordSequentialEventToAbjadVoice(SequentialEventToAbjadVoice):
@@ -120,6 +192,7 @@ class ClavichordSequentialEventToAbjadVoice(SequentialEventToAbjadVoice):
                 time_signature_sequence=time_signature_sequence,
                 tempo_envelope=tempo_envelope,
             ),
+            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
             **kwargs,
         )
 
@@ -203,14 +276,17 @@ class ClavichordSimultaneousEventToAbjadScore(SequentialEventToAbjadStaff):
         readable_duration = cdd.utilities.duration_in_seconds_to_readable_duration(
             absolute_time_in_seconds
         )
-        abjad.attach(
-            abjad.RehearsalMark(
-                markup=abjad.Markup(
-                    r"\typewriter { \smaller {" + readable_duration + "} }"
-                )
-            ),
-            abjad.get.leaf(abjad_staff_group[0], 0),
-        )
+        # it's redundant to print the first duration (as it's redundant to print
+        # the first bar number)
+        if absolute_time_in_seconds != 0:
+            abjad.attach(
+                abjad.RehearsalMark(
+                    markup=abjad.Markup(
+                        r"\typewriter { \smaller {" + readable_duration + "} }"
+                    )
+                ),
+                abjad.get.leaf(abjad_staff_group[0], 0),
+            )
         abjad_score = abjad.Score([abjad_staff_group])
         abjad_score.remove_commands.append("Bar_number_engraver")
         return abjad_score, is_rest
@@ -231,50 +307,93 @@ class AbjadScoreListToLilyPondFile(cdd_converters.AbjadScoreListToLilyPondFile):
     pass
 
 
-class ClarinetPitchSetScoreListToLilyPondFile(
-    cdd_converters.AbjadScoreListToLilyPondFile
-):
+class AbjadScoreListToFlexibleLilyPondFile(cdd_converters.AbjadScoreListToLilyPondFile):
+    def __init__(self, *args, x=2, y=1, **kwargs):
+        self._x, self._y = x, y
+        super().__init__(*args, **kwargs)
+
     def get_paper_block(self, *args, **kwargs) -> abjad.Block:
         paper_block = super().get_paper_block(*args, **kwargs)
         paper_block.items.append(
-            r"""
+            f"""
 #(set! paper-alist
-  (cons '("my size" . (cons (* 1 in) (* 1 in))) paper-alist))
+  (cons '("my size" . (cons (* {self._x} in) (* {self._y} in))) paper-alist))
 #(set-paper-size "my size")
 """
         )
         return paper_block
 
 
-def notate_soprano(chapter: cdd.chapters.Chapter):
-    instrument = "soprano"
-    abjad_score_list_to_lilypond_file = AbjadScoreListToLilyPondFile()
-    abjad_score_list = [
-        SopranoSequentialEventToAbjadScore(
-            time_signature_sequence=[
-                abjad.TimeSignature(
-                    (
-                        soprano_sequential_event.duration.numerator,
-                        soprano_sequential_event.duration.denominator,
-                    )
+def convert_soprano_related_event_to_abjad_score(
+    event_to_abjad_score_class,
+    soprano_sequential_event,
+    repetition_count,
+    absolute_time_in_seconds,
+    **kwargs,
+):
+    return event_to_abjad_score_class(
+        time_signature_sequence=[
+            abjad.TimeSignature(
+                (
+                    soprano_sequential_event.duration.numerator,
+                    soprano_sequential_event.duration.denominator,
                 )
-            ],
-        ).convert(soprano_sequential_event, repetition_count, absolute_time_in_seconds)
-        for soprano_sequential_event, repetition_count, absolute_time_in_seconds in zip(
-            chapter.soprano_sequential_event_tuple,
-            chapter.soprano_repetition_count_tuple,
-            chapter.soprano_sequential_event_absolute_time_tuple,
-        )
-    ]
+            )
+        ],
+    ).convert(
+        soprano_sequential_event, repetition_count, absolute_time_in_seconds, **kwargs
+    )
 
-    last_score = abjad_score_list[-1]
 
+def add_last_phrase_hairpin(last_score):
     for staff in last_score:
         first_leaf = abjad.get.leaf(staff, 0)
+        abjad.attach(
+            abjad.LilyPondLiteral(r"\override Hairpin.circled-tip = ##t"), first_leaf
+        )
         abjad.attach(abjad.StartHairpin(">"), first_leaf)
         last_leaf = abjad.get.leaf(staff, -1)
         abjad.attach(abjad.StopHairpin(), last_leaf)
         cdd.utilities.add_last_bar_line(last_leaf)
+
+
+def notate_soprano(chapter: cdd.chapters.Chapter):
+    instrument = "soprano"
+    abjad_score_list_to_lilypond_file = AbjadScoreListToLilyPondFile()
+    abjad_score_list = []
+
+    for (
+        index,
+        soprano_sequential_event,
+        repetition_count,
+        absolute_time_in_seconds,
+    ) in zip(
+        range(len(chapter.soprano_sequential_event_tuple)),
+        chapter.soprano_sequential_event_tuple,
+        chapter.soprano_repetition_count_tuple,
+        chapter.soprano_sequential_event_absolute_time_tuple,
+    ):
+        if index in chapter.CLARINET.unisono_part_index_tuple:
+            event_to_abjad_score_class = SopranoAndClarinetSimultaneousEventToAbjadScore
+            soprano_sequential_event = (
+                chapter.soprano_and_clarinet_unisono_simultaneous_event_tuple[
+                    chapter.CLARINET.unisono_part_index_tuple.index(index)
+                ]
+            )
+        else:
+            event_to_abjad_score_class = SopranoSequentialEventToAbjadScore
+
+        abjad_score = convert_soprano_related_event_to_abjad_score(
+            event_to_abjad_score_class,
+            soprano_sequential_event,
+            repetition_count,
+            absolute_time_in_seconds,
+        )
+        abjad_score_list.append(abjad_score)
+
+    last_score = abjad_score_list[-1]
+
+    add_last_phrase_hairpin(last_score)
 
     notation_file_path = chapter.get_notation_path(instrument)
     lilypond_file_path_base = f"{notation_file_path}_lilypond"
@@ -299,77 +418,115 @@ def notate_soprano(chapter: cdd.chapters.Chapter):
 
 
 def notate_clarinet(chapter: cdd.chapters.Chapter):
-    instrument = "clarinet"
-    clarinet_sequential_event_to_abjad_score = ClarinetSequentialEventToAbjadScore()
-    lilypond_file_and_width_list = [
-        (
-            ClarinetPitchSetScoreListToLilyPondFile().convert(
-                [
-                    clarinet_sequential_event_to_abjad_score.convert(
-                        chapter.CLARINET.pedal_tone_sequential_event
-                    )
-                ],
-                add_ekmelily=True,
-                add_book_preamble=False,
-                margin=0,
-            ),
-            0.15,
-        )
-    ]
-
-    for hyperchromatic_index, hyperchromatic in enumerate(
-        chapter.CLARINET.microtonal_movement_sequential_event_tuple
-    ):
-        cdd.utilities.add_cent_deviation_to_sequential_event(hyperchromatic)
-        reversed_hyperchromatic = core_events.SequentialEvent(
-            list(reversed(hyperchromatic.copy()))
-        )
-        notation_indicator_content = (
-            r"\normalsize { \caps { hyperchromatic melody "
-            f"no. {hyperchromatic_index + 1}"
-        )
-        if hyperchromatic_index == 0:
-            notation_indicator_content += " (rhythm is free; can be varied)"
-        notation_indicator_content += "} }"
-        hyperchromatic[
-            0
-        ].notation_indicator_collection.rehearsal_mark.markup = abjad.Markup(
-            notation_indicator_content
-        )
-        reversed_hyperchromatic[
-            0
-        ].notation_indicator_collection.margin_markup.content = (
-            r"\normalsize { \caps { or } }"
-        )
-        for hyperchromatic_variant in (hyperchromatic, reversed_hyperchromatic):
-            lilypond_file = AbjadScoreListToLilyPondFile().convert(
-                clarinet_sequential_event_to_abjad_score.convert(
-                    hyperchromatic_variant
-                ),
-                add_ekmelily=True,
-                add_book_preamble=True,
-                margin=0,
+    def add_pdf(lilypond_file_path, width):
+        figure = pylatex.Figure(position="h!")
+        figure.append(
+            pylatex.NoEscape(
+                r"\includegraphics[width="
+                + str(width)
+                + r"\textwidth]{"
+                + lilypond_file_path.split("/")[-1]
+                + "}"
             )
-            lilypond_file_and_width_list.append((lilypond_file, 1))
+        )
+        latex_document.append(figure)
 
-    notation_file_path = chapter.get_notation_path(instrument)
-    lilypond_file_path_base = f"{notation_file_path}_lilypond"
-    lilypond_file_path_to_width_dict = {}
-    for index, lilypond_file_and_width in enumerate(lilypond_file_and_width_list):
-        lilypond_file, width = lilypond_file_and_width
-        lilypond_file_path = f"{lilypond_file_path_base}_{index}.pdf"
+    def add_sequential_event(
+        sequential_event,
+        path_suffix,
+        width=0.2,
+        abjad_score_list_to_lilypond_file_class=AbjadScoreListToFlexibleLilyPondFile,
+        abjad_score_list_to_lilypond_file_class_kwargs={},
+    ):
+        abjad_score = clarinet_sequential_event_to_abjad_score(sequential_event)
+        lilypond_file = abjad_score_list_to_lilypond_file_class(
+            **abjad_score_list_to_lilypond_file_class_kwargs
+        )(
+            [abjad_score],
+            add_ekmelily=True,
+            add_book_preamble=False,
+            add_fancy_glissando=True,
+            margin=0,
+        )
+        lilypond_file_path = f"{notation_file_path}_{path_suffix}.pdf"
         abjad.persist.as_pdf(lilypond_file, lilypond_file_path)
-        lilypond_file_path_to_width_dict.update(
-            {lilypond_file_path.split("/")[-1]: width}
+        add_pdf(lilypond_file_path, width)
+
+    instrument = "clarinet"
+
+    clarinet_sequential_event_to_abjad_score = ClarinetSequentialEventToAbjadScore()
+    notation_file_path = chapter.get_notation_path(instrument)
+
+    soprano_and_clarinet_unisono_width = 0.9
+    soprano_and_clarinet_unisono_file_path_list = []
+    for index, simultaneous_event in zip(
+        chapter.CLARINET.unisono_part_index_tuple,
+        chapter.soprano_and_clarinet_unisono_simultaneous_event_tuple,
+    ):
+        repetition_count = chapter.soprano_repetition_count_tuple[index]
+        absolute_time_in_seconds = chapter.soprano_sequential_event_absolute_time_tuple[
+            index
+        ]
+        abjad_score = convert_soprano_related_event_to_abjad_score(
+            SopranoAndClarinetSimultaneousEventToAbjadScore,
+            simultaneous_event,
+            repetition_count,
+            absolute_time_in_seconds,
+            adjust_clarinet=True,
+        )
+        if index == chapter.CLARINET.unisono_part_index_tuple[-1]:
+            add_last_phrase_hairpin(abjad_score)
+        lilypond_file = AbjadScoreListToLilyPondFile().convert(
+            [abjad_score], add_ekmelily=True, add_book_preamble=True
+        )
+        lilypond_file_path = f"{notation_file_path}_unisono_{index}.pdf"
+        abjad.persist.as_pdf(lilypond_file, lilypond_file_path)
+        soprano_and_clarinet_unisono_file_path_list.append(lilypond_file_path)
+
+    chapter_to_latex_document = cdd_converters.PDFChapterToLatexDocument()
+    latex_document = chapter_to_latex_document.convert(chapter, instrument)
+
+    latex_document.append(pylatex.NoEscape(chapter.CLARINET.instruction_text_sine))
+
+    for index, sine_note in enumerate(chapter.CLARINET.sine_note_tuple):
+        sequential_event = sine_note.get_sequential_event()
+        add_sequential_event(
+            sequential_event,
+            f"sine_{index}",
+            0.25,
+            abjad_score_list_to_lilypond_file_class_kwargs={"x": 2.25},
         )
 
-    chapter_to_latex_document = cdd_converters.PreciseScoreListChapterToLatexDocument(
-        lilypond_file_path_to_width_dict,
-        instruction_text=chapter.CLARINET.instruction_text,
-        width=0.25,
-        # hspace="1.30cm",
+    latex_document.append(pylatex.NoEscape(chapter.CLARINET.instruction_text_glissando))
+
+    for index, glissando_note in enumerate(chapter.CLARINET.glissando_note_tuple):
+        sequential_event = glissando_note.get_sequential_event()
+        add_sequential_event(
+            sequential_event,
+            f"glissando_{index}",
+            0.25,
+            abjad_score_list_to_lilypond_file_class_kwargs={"x": 2.25, "y": 1.25},
+        )
+
+    latex_document.append(pylatex.NoEscape(chapter.CLARINET.instruction_text_unisono))
+
+    for lilypond_file_path in soprano_and_clarinet_unisono_file_path_list[:3]:
+        add_pdf(lilypond_file_path, soprano_and_clarinet_unisono_width)
+
+    latex_document.append(pylatex.NoEscape(chapter.CLARINET.instruction_text_slap))
+
+    add_sequential_event(
+        chapter.CLARINET.slap_long_note.get_sequential_event(),
+        "slap",
+        0.35,
+        abjad_score_list_to_lilypond_file_class_kwargs={"y": 0.85, "x": 3},
     )
-    latex_document = chapter_to_latex_document.convert(chapter, instrument)
+
+    latex_document.append(pylatex.NoEscape(chapter.CLARINET.instruction_text_unisono))
+
+    for lilypond_file_path in soprano_and_clarinet_unisono_file_path_list[3:]:
+        add_pdf(lilypond_file_path, soprano_and_clarinet_unisono_width)
+
     latex_document.generate_pdf(chapter.get_notation_path(instrument), clean_tex=True)
 
 
@@ -377,7 +534,13 @@ def notate_clavichord(chapter: cdd.chapters.Chapter):
     instrument = "clavichord"
     notation_file_path = chapter.get_notation_path(instrument)
     lilypond_file_path_base = f"{notation_file_path}_lilypond"
-    abjad_score_list_to_lilypond_file = AbjadScoreListToLilyPondFile()
+    x = 9
+    abjad_score_list_to_lilypond_file_two = AbjadScoreListToFlexibleLilyPondFile(
+        x=x, y=1.5
+    )
+    abjad_score_list_to_lilypond_file_empty = AbjadScoreListToFlexibleLilyPondFile(
+        x=x, y=0.75
+    )
 
     abjad_score_list = []
     is_rest_list = []
@@ -409,19 +572,43 @@ def notate_clavichord(chapter: cdd.chapters.Chapter):
     last_not_rest = -list(reversed(is_rest_list)).index(False)
     abjad_score_list = abjad_score_list[:last_not_rest]
 
-    for score in abjad_score_list:
-        for staff in score[0]:
-            last_leaf = abjad.get.leaf(staff, -1)
-            cdd.utilities.add_last_bar_line(last_leaf, "|")
+    # better to avoid bar lines, so it looks more as if it
+    # would continue
 
+    # for score in abjad_score_list:
+    #     for staff in score[0]:
+    #         last_leaf = abjad.get.leaf(staff, -1)
+    #         cdd.utilities.add_last_bar_line(last_leaf, "|")
+
+    # Show that song ends here
     for staff in abjad_score_list[-1][0]:
         last_leaf = abjad.get.leaf(staff, -1)
         cdd.utilities.add_last_bar_line(last_leaf)
 
+    # We can remove all clefs for the scores after the first one
+    # (because the clefs don't change and the music just continues)
+
+    for score in abjad_score_list[1:]:
+        score.remove_commands.append("System_start_delimiter_engraver")
+        for piano_staff in score:
+            piano_staff.remove_commands.append("Clef_engraver")
+            piano_staff.remove_commands.append("System_start_delimiter_engraver")
+            for staff in piano_staff:
+                staff.remove_commands.append("Clef_engraver")
+
     lilypond_file_path_list = []
     for index, abjad_score in enumerate(abjad_score_list):
+        is_rest = is_rest_list[index]
+        if is_rest:
+            abjad_score_list_to_lilypond_file = abjad_score_list_to_lilypond_file_empty
+        else:
+            abjad_score_list_to_lilypond_file = abjad_score_list_to_lilypond_file_two
         lilypond_file = abjad_score_list_to_lilypond_file.convert(
-            [abjad_score], add_ekmelily=False, add_book_preamble=True, margin=0
+            # [abjad_score], add_ekmelily=False, add_book_preamble=True, margin=0
+            [abjad_score],
+            add_ekmelily=False,
+            add_book_preamble=False,
+            margin=0,
         )
         local_lilypond_file_path = f"{lilypond_file_path_base}_{index}.pdf"
         abjad.persist.as_pdf(lilypond_file, local_lilypond_file_path)
@@ -431,15 +618,34 @@ def notate_clavichord(chapter: cdd.chapters.Chapter):
     chapter_to_latex_document = cdd_converters.ScoreListChapterToLatexDocument(
         lilypond_file_path_list,
         instruction_text=chapter.CLAVICHORD.instruction_text,
-        width=0.92,
+        # width=0.92,
+        width=0.96,
         hspace="-0.0cm",
-        vspace="0.3cm",
+        vspace="0cm",
     )
     latex_document = chapter_to_latex_document.convert(chapter, instrument)
-    latex_document.generate_pdf(chapter.get_notation_path(instrument), clean_tex=False)
+    latex_document.generate_pdf(notation_file_path, clean_tex=True)
+
+
+def notate_noise(chapter: cdd.chapters.Chapter):
+    instrument = "noise"
+    notation_file_path = chapter.get_notation_path(instrument)
+    table = tuple(
+        (
+            cdd.utilities.duration_in_seconds_to_readable_duration(absolute_time),
+            chapter.NOISE.character,
+        )
+        for absolute_time in chapter.NOISE.absolute_time_tuple
+    )
+
+    latex_document = cdd_converters.TableChapterToLatexDocument(
+        chapter.NOISE.instruction_text, table
+    ).convert(chapter, instrument)
+    latex_document.generate_pdf(notation_file_path, clean_tex=False)
 
 
 def main(chapter: cdd.chapters.Chapter):
+    notate_noise(chapter)
     notate_clarinet(chapter)
     notate_clavichord(chapter)
     notate_soprano(chapter)

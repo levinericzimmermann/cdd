@@ -34,12 +34,19 @@ class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):
         header_block.items.append(r"tagline = ##f")
         return header_block
 
-    def get_includes(self, add_book_preamble: bool, add_ekmelily: bool) -> list[str]:
+    def get_includes(
+        self,
+        add_book_preamble: bool,
+        add_ekmelily: bool,
+        add_fancy_glissando: bool,
+    ) -> list[str]:
         includes = []
         if add_book_preamble:
             includes.append("lilypond-book-preamble.ly")
         if add_ekmelily:
             includes.append("ekme-heji-ref-c.ily")
+        if add_fancy_glissando:
+            includes.append("etc/lilypond/fancy-glissando.ly")
         return includes
 
     def convert(
@@ -47,10 +54,11 @@ class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):
         abjad_score_list: list[abjad.Score],
         add_book_preamble: bool = False,
         add_ekmelily: bool = False,
+        add_fancy_glissando:bool=False,
         margin: float = 1,
     ) -> abjad.LilyPondFile:
         includes = self.get_includes(
-            add_ekmelily=add_ekmelily, add_book_preamble=add_book_preamble
+            add_ekmelily=add_ekmelily, add_book_preamble=add_book_preamble, add_fancy_glissando=add_fancy_glissando
         )
         lilypond_file = abjad.LilyPondFile(includes=includes)
 

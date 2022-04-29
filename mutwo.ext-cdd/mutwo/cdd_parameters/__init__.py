@@ -1,5 +1,6 @@
 from .lyrics import *
 from .notation_indicators import *
+from .playing_indicators import *
 from .abjad_attachments import *
 
 # set mutwo default values
@@ -8,6 +9,10 @@ from mutwo import music_events
 
 music_events.configurations.DEFAULT_NOTATION_INDICATORS_COLLECTION_CLASS = (
     CDDNotationIndicatorCollection
+)
+
+music_events.configurations.DEFAULT_PLAYING_INDICATORS_COLLECTION_CLASS = (
+    CDDPlayingIndicatorCollection
 )
 
 del music_events
@@ -40,7 +45,7 @@ ISIS_CONSONANT_TUPLE = (
     + isis_converters.constants.XSAMPA.other_tuple
 )
 
-CONSONANT_PROHIBITED_TO_ALLOWED = {'r': 'R', "J": "j"}
+CONSONANT_PROHIBITED_TO_ALLOWED = {"r": "R", "J": "j"}
 
 import warnings
 

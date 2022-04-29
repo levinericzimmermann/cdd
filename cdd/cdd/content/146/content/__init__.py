@@ -11,6 +11,7 @@ from mutwo import core_converters
 from mutwo import core_events
 from mutwo import core_parameters
 from mutwo import core_utilities
+from mutwo import music_parameters
 
 import cdd
 
@@ -21,6 +22,7 @@ class Chapter(cdd.chapters.Chapter):
     from . import SOPRANO
     from . import CLARINET
     from . import CLAVICHORD
+    from . import NOISE
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,10 +56,11 @@ class Chapter(cdd.chapters.Chapter):
 
     def _add_sentence_to_soprano_sequential_event(self, sentence, sequential_event):
         beat_count = len([event for event in sequential_event if event.pitch_list])
-        solution, *_ = (
-            cdd_converters.SentenceAndBeatCountToDistributedSentenceTuple().convert(
-                sentence, beat_count
-            )
+        (
+            solution,
+            *_,
+        ) = cdd_converters.SentenceAndBeatCountToDistributedSentenceTuple().convert(
+            sentence, beat_count
         )
         lyric_iterator = iter(solution)
         for note_like in sequential_event:
@@ -76,7 +79,6 @@ class Chapter(cdd.chapters.Chapter):
         for sequential_event, sentence in zip(
             soprano_sequential_event_tuple, self.sentence_tuple
         ):
-            cdd.utilities.add_cent_deviation_to_sequential_event(sequential_event)
             self._add_sentence_to_soprano_sequential_event(sentence, sequential_event)
         return soprano_sequential_event_tuple
 
@@ -113,7 +115,8 @@ class Chapter(cdd.chapters.Chapter):
                             position
                         )
                     ):
-                        note_like_or_simple_event.lyric = next(clavichord_word_cycle)
+                        # note_like_or_simple_event.lyric = next(clavichord_word_cycle)
+                        pass
                     index += 1
                 new_sequential_event.append(note_like_or_simple_event)
             new_sequential_event_list.append(new_sequential_event)
@@ -144,14 +147,56 @@ class Chapter(cdd.chapters.Chapter):
                 + core_converters.TempoConverter(
                     expenvelope.Envelope.from_points([0, self.SOPRANO.tempo_range.end])
                 )(new_sequential_event).duration
-                + 7,
+                + 7
+                + self.SOPRANO.repetition_rest_duration_range.end,
             )
             + self.SOPRANO.sequential_event_absolute_time_tuple[8:]
         )
 
+        self.soprano_sequential_event_tuple[2][3].pitch_list = []
+        self.soprano_sequential_event_tuple[2][4].pitch_list = []
+
+        for sequential_event in self.soprano_sequential_event_tuple:
+            cdd.utilities.add_cent_deviation_to_sequential_event(sequential_event)
+
         # There are four lines, where singer plays unisonos
         # with clarinet.
         # They are added here.
+
+        soprano_and_clarinet_unisono_simultaneous_event_list = []
+        for index, pitch_interval in zip(
+            self.CLARINET.unisono_part_index_tuple,
+            self.CLARINET.clarinet_unisono_interval_tuple,
+        ):
+            soprano_sequential_event = self.soprano_sequential_event_tuple[index]
+            clarinet_sequential_event = soprano_sequential_event.set_parameter(
+                "pitch_list",
+                lambda pitch_list: [
+                    pitch + pitch_interval for pitch in pitch_list if pitch
+                ],
+                mutate=False,
+            ).set_parameter("lyric", music_parameters.DirectLyric(""))
+            simultaneous_event = core_events.SimultaneousEvent(
+                [soprano_sequential_event, clarinet_sequential_event]
+            )
+            soprano_and_clarinet_unisono_simultaneous_event_list.append(
+                simultaneous_event
+            )
+
+        soprano_and_clarinet_unisono_simultaneous_event_list[2][1][0].pitch_list = "8/5"
+        soprano_and_clarinet_unisono_simultaneous_event_list[2][1][2].pitch_list = "1/1"
+        soprano_and_clarinet_unisono_simultaneous_event_list[2][1][3].pitch_list = "2/3"
+        soprano_and_clarinet_unisono_simultaneous_event_list[2][0][3].pitch_list = "8/5"
+
+        for simultaneous_event in soprano_and_clarinet_unisono_simultaneous_event_list:
+            for sequential_event in simultaneous_event:
+                cdd.utilities.add_cent_deviation_to_sequential_event(
+                    sequential_event
+                )
+
+        self.soprano_and_clarinet_unisono_simultaneous_event_tuple = tuple(
+            soprano_and_clarinet_unisono_simultaneous_event_list
+        )
 
     tempo_envelope = expenvelope.Envelope.from_points(
         [2, core_parameters.TempoPoint(55 / 4)]
