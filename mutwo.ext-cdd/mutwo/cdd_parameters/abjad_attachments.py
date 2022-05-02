@@ -1,5 +1,6 @@
 # import itertools
 import warnings
+import typing
 
 import abjad
 import quicktions as fractions
@@ -14,14 +15,6 @@ from mutwo import music_parameters
 # arpeggio above staves can handle direction.
 # Furthermore minimal length of arpeggio is defined here.
 def Arpeggio_process_leaf_monkey_patched(self, leaf: abjad.Leaf):
-    # Sometimes we want to have only one note head with arpeggio: For arpeggio
-    # over staves.
-    # if not hasattr(leaf, "note_heads"):
-    #     warnings.warn(
-    #         f"You tried to attach an arpeggio to the Note '{leaf}' (with"
-    #         " only one pitch). This is impossible. Note skipped."
-    #     )
-    #     return leaf
     thickness = 3
     abjad.attach(
         abjad.LilyPondLiteral("\\override Arpeggio.thickness = #'{}".format(thickness)),

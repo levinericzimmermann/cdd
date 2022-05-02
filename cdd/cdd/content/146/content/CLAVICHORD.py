@@ -44,6 +44,7 @@ from mutwo import music_parameters
 
 from cdd import configurations
 from cdd import constants
+from cdd import utilities
 
 from . import SOPRANO
 
@@ -305,7 +306,7 @@ class DataToClavichordLine(core_converters.abc.Converter):
             elif fitness_candidate == fitness:
                 if len(set(candidate)) > len(set(champion)):
                     champion = candidate
-        chord_duration_tuple = cdd.utilities.interlock_long_and_short(champion)
+        chord_duration_tuple = utilities.interlock_long_and_short(champion)
         if last_chord_duration_is_longest:
             chord_duration_tuple = tuple(reversed(chord_duration_tuple))
         return chord_duration_tuple
@@ -769,7 +770,7 @@ def _apply_grace_notes(
     force_to_compute=False,
     # force_to_compute=True,
 )
-def _get_sequential_event_tuple(line_count: int):
+def _get_sequential_event_tuple(line_count: int, _):
     sequential_event_list = []
     data_to_clavichord_line = DataToClavichordLine()
     for line_index in range(line_count):
@@ -909,7 +910,7 @@ line_duration = 45
 
 line_count = math.ceil(SOPRANO.duration / line_duration)
 
-sequential_event_tuple = _get_sequential_event_tuple(line_count)
+sequential_event_tuple = _get_sequential_event_tuple(line_count, constants.CLAVICHORD_AMBITUS)
 
 sequential_event_tuple[0][2].duration *= fractions.Fraction(3, 2)
 sequential_event_tuple[0][3].duration *= fractions.Fraction(1, 2)

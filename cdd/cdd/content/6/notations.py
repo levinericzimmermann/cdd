@@ -25,13 +25,13 @@ class SequentialEventToRhythmicStaff(abjad_converters.SequentialEventToAbjadVoic
     ):
         super().__init__(
             *args,
-            sequential_event_to_quantized_abjad_container_converter=abjad_converters.RMakersSequentialEventToDurationLineBasedQuantizedAbjadContainerConverter(
+            sequential_event_to_quantized_abjad_container=abjad_converters.RMakersSequentialEventToDurationLineBasedQuantizedAbjadContainer(
                 time_signature_sequence=time_signature_sequence,
                 tempo_envelope=tempo_envelope,
             ),
             # No need for dynamics here
-            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
-            tempo_envelope_to_abjad_attachment_tempo_converter=None,
+            mutwo_volume_to_abjad_attachment_dynamic=None,
+            tempo_envelope_to_abjad_attachment_tempo=None,
             **kwargs,
         )
 
@@ -76,7 +76,7 @@ class SequentialEventToRhythmicStaff(abjad_converters.SequentialEventToAbjadVoic
         staff = abjad.Staff([voice], lilypond_type="RhythmicStaff", name=tag)
         staff.remove_commands.append("Time_signature_engraver")
         abjad_converters.AddInstrumentName(
-            instrument_name_font_size="small", short_instrument_name_font_size="small"
+            instrument_name_font_size=r"small \typewriter", short_instrument_name_font_size=r"small \typewriter"
         )(event_to_convert, staff)
         return staff
 
@@ -156,7 +156,7 @@ class SimultaneousEventToAbjadScore(
 
         super().__init__(
             nested_complex_event_to_complex_event_to_abjad_container_converters_converter=abjad_converters.TagBasedNestedComplexEventToComplexEventToAbjadContainers(
-                tag_to_complex_event_to_abjad_container_converter=tag_to_complex_event_to_abjad_container_converter
+                tag_to_abjad_converter_dict=tag_to_complex_event_to_abjad_container_converter
             ),
             abjad_container_class=abjad.StaffGroup,
             lilypond_type_of_abjad_container="StaffGroup",
@@ -221,7 +221,7 @@ class AbjadScoreListToLilyPondFile(cdd_converters.AbjadScoreListToLilyPondFile):
         paper_block.items.append(
             r"""
 #(set! paper-alist
-  (cons '("my size" . (cons (* 15 in) (* 17 in))) paper-alist))
+  (cons '("my size" . (cons (* 15 in) (* 18 in))) paper-alist))
 #(set-paper-size "my size")
 system-system-spacing = #'((basic-distance . 7.5) (padding . 0))
 """
@@ -239,7 +239,7 @@ def main(chapter: cdd.chapters.Chapter):
         simultaneous_event_to_abjad_score.convert(chapter.simultaneous_event)
     ]
     abjad.attach(
-        abjad.Markup("duration: circa 3'15", direction="^"),
+        abjad.Markup(r"\typewriter { duration: circa 3'15 }", direction="^"),
         abjad.get.leaf(abjad_score_list[0], 0),
     )
     lilypond_file = abjad_score_list_to_lilypond_file.convert(

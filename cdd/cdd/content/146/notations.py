@@ -21,9 +21,9 @@ class SequentialEventToAbjadVoice(abjad_converters.SequentialEventToAbjadVoice):
     ):
         super().__init__(
             *args,
-            mutwo_pitch_to_abjad_pitch_converter=abjad_converters.MutwoPitchToHEJIAbjadPitch(),
+            mutwo_pitch_to_abjad_pitch=abjad_converters.MutwoPitchToHEJIAbjadPitch(),
             # No need for dynamics here
-            tempo_envelope_to_abjad_attachment_tempo_converter=None,
+            tempo_envelope_to_abjad_attachment_tempo=None,
             **kwargs,
         )
 
@@ -68,11 +68,11 @@ class SopranoSequentialEventToAbjadScore(SequentialEventToAbjadStaff):
     ):
         super().__init__(
             *args,
-            sequential_event_to_quantized_abjad_container_converter=abjad_converters.RMakersSequentialEventToQuantizedAbjadContainer(
+            sequential_event_to_quantized_abjad_container=abjad_converters.RMakersSequentialEventToQuantizedAbjadContainer(
                 time_signature_sequence=time_signature_sequence,
                 tempo_envelope=tempo_envelope,
             ),
-            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
+            mutwo_volume_to_abjad_attachment_dynamic=None,
             **kwargs,
         )
 
@@ -118,8 +118,8 @@ class SopranoAndClarinetSimultaneousEventToAbjadScore(
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._clarinet_sequential_event_to_abjad_staff = SequentialEventToAbjadStaff(
-            sequential_event_to_quantized_abjad_container_converter=self._sequential_event_to_quantized_abjad_container_converter,
-            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
+            sequential_event_to_quantized_abjad_container=self._sequential_event_to_quantized_abjad_container_converter,
+            mutwo_volume_to_abjad_attachment_dynamic=None,
         )
 
     def convert(
@@ -188,11 +188,11 @@ class ClavichordSequentialEventToAbjadVoice(SequentialEventToAbjadVoice):
     ):
         super().__init__(
             *args,
-            sequential_event_to_quantized_abjad_container_converter=abjad_converters.RMakersSequentialEventToDurationLineBasedQuantizedAbjadContainerConverter(
+            sequential_event_to_quantized_abjad_container=abjad_converters.RMakersSequentialEventToDurationLineBasedQuantizedAbjadContainer(
                 time_signature_sequence=time_signature_sequence,
                 tempo_envelope=tempo_envelope,
             ),
-            mutwo_volume_to_abjad_attachment_dynamic_converter=None,
+            mutwo_volume_to_abjad_attachment_dynamic=None,
             **kwargs,
         )
 

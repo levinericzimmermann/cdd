@@ -347,8 +347,8 @@ class Chapter(cdd.chapters.Chapter):
 
     instruction_text = r"""
 \begin{footnotesize}
-speak text clearly \& naturally (in a calm voice); avoid theatric, monotonous or mechanical intonation.\\
-singer leads group by playing the additional percussion line.\\
-instrument can be any (but only one) pitched metallic percussion, e.g. a tiny bell, crotales, kalimba, \dots\\
+speak text clearly \& naturally (in a calm voice); avoid theatric, monotonous or mechanical intonation.
+singer leads group by playing the additional percussion line.
+instrument can be any (but only one) pitched metallic percussion, e.g. a tiny bell, crotales, kalimba, \dots
 \end{footnotesize}
 """

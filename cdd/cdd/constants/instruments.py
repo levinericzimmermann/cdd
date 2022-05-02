@@ -76,9 +76,10 @@ SOPRAN_WESTERN_PITCH_AMBITUS = music_parameters.OctaveAmbitus(
 
 
 CLAVICHORD_WESTERN_PITCH_AMBITUS = music_parameters.OctaveAmbitus(
-    # music_parameters.WesternPitch("c", 3), music_parameters.WesternPitch("b", 6)
-    music_parameters.WesternPitch("c", 3),
-    music_parameters.WesternPitch("f", 6),
+    # music_parameters.WesternPitch("c", 3),
+    # music_parameters.WesternPitch("f", 6),
+    music_parameters.WesternPitch("f", 1),
+    music_parameters.WesternPitch("e", 6),
 )
 
 CLARINET_AMBITUS = _western_pitch_ambitus_to_just_intonation_ambitus(
@@ -181,3 +182,7 @@ CLARINET_EVENT_TO_CLARINET_EVENT_WITH_FINGERING = (
         CLARINET_EXPONENT_TUPLE_TO_WOODWIND_FINGERING_DICT
     )
 )
+
+CLARINET_MAXIMUM_TONE_DURATION = 45
+
+SOPRANO_MAXIMUM_TONE_DURATION = 14

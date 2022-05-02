@@ -1,7 +1,8 @@
 import os
 
-# CHAPTER_TO_RENDER_TUPLE = (6, 60, 146)
-CHAPTER_TO_RENDER_TUPLE = (146,)
+# CHAPTER_TO_RENDER_TUPLE = ("6", "12", "60", "146")
+# CHAPTER_TO_RENDER_TUPLE = ("6",)
+CHAPTER_TO_RENDER_TUPLE = ("12",)
 
 
 class Path(str):
@@ -20,6 +21,7 @@ PATH.BUILDS = "builds"
 
 PATH.BUILDS.ILLUSTRATIONS = "illustrations"
 PATH.BUILDS.NOTATIONS = "notations"
+PATH.BUILDS.SCORES = "scores"
 PATH.BUILDS.MIDI = "midi"
 PATH.BUILDS.SOUND_FILES = "sound_files"
 PATH.BUILDS.PICKLED = "pickled"
