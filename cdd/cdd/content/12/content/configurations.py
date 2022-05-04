@@ -113,7 +113,7 @@ TRANSFORMER_DATA_TUPLE = (
     # ############################################################# #
     (
         lambda sequential_event: set_duration(
-            sequential_event, ((2, 3), (1, 3), (1, 3), (2, 3))
+            sequential_event, ((1, 3), (2, 3), (2, 3), (1, 3))
         ),
         4,
         4,

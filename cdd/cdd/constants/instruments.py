@@ -24,7 +24,7 @@ def _western_pitch_to_just_intonation_pitch(
     return just_intonation_pitch
 
 
-def _western_pitch_ambitus_to_just_intonation_ambitus(
+def western_pitch_ambitus_to_just_intonation_ambitus(
     western_pitch_ambitus: music_parameters.OctaveAmbitus,
 ) -> music_parameters.OctaveAmbitus:
     return music_parameters.OctaveAmbitus(
@@ -82,15 +82,15 @@ CLAVICHORD_WESTERN_PITCH_AMBITUS = music_parameters.OctaveAmbitus(
     music_parameters.WesternPitch("e", 6),
 )
 
-CLARINET_AMBITUS = _western_pitch_ambitus_to_just_intonation_ambitus(
+CLARINET_AMBITUS = western_pitch_ambitus_to_just_intonation_ambitus(
     CLARINET_WESTERN_PITCH_AMBITUS
 )
 
-SOPRAN_AMBITUS = _western_pitch_ambitus_to_just_intonation_ambitus(
+SOPRAN_AMBITUS = western_pitch_ambitus_to_just_intonation_ambitus(
     SOPRAN_WESTERN_PITCH_AMBITUS
 )
 
-CLAVICHORD_AMBITUS = _western_pitch_ambitus_to_just_intonation_ambitus(
+CLAVICHORD_AMBITUS = western_pitch_ambitus_to_just_intonation_ambitus(
     CLAVICHORD_WESTERN_PITCH_AMBITUS
 )
 

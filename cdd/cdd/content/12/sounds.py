@@ -117,7 +117,7 @@ def main(chapter: cdd.chapters.Chapter):
         )
         if instrument_name == "soprano":
             sound_file_path = chapter.get_sound_file_path(instrument_name)
-            # event_to_singing_synthesis.convert(tagged_sequential_event, sound_file_path)
+            event_to_singing_synthesis.convert(tagged_sequential_event, sound_file_path)
         tagged_sequential_event.duration *= 2
         tagged_sequential_event = functools.reduce(
             operator.add,

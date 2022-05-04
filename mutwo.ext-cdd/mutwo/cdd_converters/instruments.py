@@ -61,7 +61,11 @@ class EventToEventWithWoodwindFingering(core_converters.abc.SymmetricalEventConv
         if hasattr(event_to_convert, "playing_indicator_collection"):
             woodwind_fingering = None
             for pitch in event_to_convert.pitch_list:
-                if pitch.exponent_tuple in self._exponent_tuple_to_woodwind_fingering:
+                if (
+                    hasattr(pitch, "exponent_tuple")
+                    and pitch.exponent_tuple
+                    in self._exponent_tuple_to_woodwind_fingering
+                ):
                     woodwind_fingering = self._exponent_tuple_to_woodwind_fingering[
                         pitch.exponent_tuple
                     ]

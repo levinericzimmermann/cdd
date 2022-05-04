@@ -188,14 +188,33 @@ class Chapter(cdd.chapters.Chapter):
         soprano_and_clarinet_unisono_simultaneous_event_list[2][1][3].pitch_list = "2/3"
         soprano_and_clarinet_unisono_simultaneous_event_list[2][0][3].pitch_list = "8/5"
 
+        soprano_and_clarinet_unisono_simultaneous_event_list[3][1][
+            6
+        ].pitch_list = music_parameters.WesternPitch("as", 3)
+        soprano_and_clarinet_unisono_simultaneous_event_list[3][1][
+            12
+        ].pitch_list = music_parameters.WesternPitch("e", 4)
+
+        soprano_and_clarinet_unisono_simultaneous_event_list[3][0][
+            12
+        ].pitch_list = "7/12"
+
         for simultaneous_event in soprano_and_clarinet_unisono_simultaneous_event_list:
             for sequential_event in simultaneous_event:
-                cdd.utilities.add_cent_deviation_to_sequential_event(
-                    sequential_event
-                )
+                cdd.utilities.add_cent_deviation_to_sequential_event(sequential_event)
 
         self.soprano_and_clarinet_unisono_simultaneous_event_tuple = tuple(
             soprano_and_clarinet_unisono_simultaneous_event_list
+        )
+
+        soprano_sequential_event_absolute_time_list = list(
+            self.soprano_sequential_event_absolute_time_tuple
+        )
+        soprano_sequential_event_absolute_time_list[6] -= 2
+        soprano_sequential_event_absolute_time_list[8] += 6
+
+        self.soprano_sequential_event_absolute_time_tuple = tuple(
+            soprano_sequential_event_absolute_time_list
         )
 
     tempo_envelope = expenvelope.Envelope.from_points(

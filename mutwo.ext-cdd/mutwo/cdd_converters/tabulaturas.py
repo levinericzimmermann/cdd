@@ -1,5 +1,6 @@
 import copy
 import typing
+import warnings
 
 from mutwo import core_converters
 from mutwo import core_events
@@ -28,10 +29,17 @@ class PitchToTabulaturaPitch(core_converters.abc.Converter):
 
     def convert(
         self, pitch_to_convert: music_parameters.JustIntonationPitch
-    ) -> music_parameters.WesternPitch:
-        return self._exponent_tuple_to_western_pitch_dict[
-            pitch_to_convert.exponent_tuple
-        ]
+    ) -> typing.Optional[music_parameters.WesternPitch]:
+        try:
+            return self._exponent_tuple_to_western_pitch_dict[
+                pitch_to_convert.exponent_tuple
+            ]
+        except KeyError:
+            warnings.warn(
+                f"Couldn't find any tabulatura pitch for {pitch_to_convert}!",
+                RuntimeWarning,
+            )
+            return None
 
 
 class SequentialEventToSplitSequentialEvent(core_converters.abc.Converter):
@@ -134,7 +142,9 @@ class SequentialEventToSplitSequentialEvent(core_converters.abc.Converter):
                         if index == 1:
                             new_note_like.lyric = music_parameters.DirectLyric("")
                         else:
-                            new_note_like.lyric = copy.deepcopy(note_like_or_simple_event.lyric)
+                            new_note_like.lyric = copy.deepcopy(
+                                note_like_or_simple_event.lyric
+                            )
                         new_note_like.pitch_list = pitch_list
                         sequential_event.append(new_note_like)
                     else:
@@ -230,7 +240,15 @@ class SequentialEventToTabulaturaBasedEvent(core_converters.abc.Converter):
         self, pitch_list_tuple: tuple[list[music_parameters.abc.Pitch], ...]
     ) -> tuple[list[music_parameters.abc.Pitch], ...]:
         return tuple(
-            [self._pitch_to_tabulatura_pitch.convert(pitch) for pitch in pitch_list]
+            list(
+                filter(
+                    lambda pitch: pitch is not None,
+                    (
+                        self._pitch_to_tabulatura_pitch.convert(pitch)
+                        for pitch in pitch_list
+                    ),
+                )
+            )
             for pitch_list in pitch_list_tuple
         )
 

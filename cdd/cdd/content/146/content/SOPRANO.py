@@ -1,10 +1,12 @@
 import expenvelope
+# import quicktions as fractions
 import ranges
 
 from mutwo import core_converters
 from mutwo import core_events
 from mutwo import core_utilities
 from mutwo import mmml_converters
+# from mutwo import music_events
 from mutwo import music_parameters
 
 
@@ -56,7 +58,7 @@ fado_part_mmml_tuple = (
     # e faltam a esse
     # r"3-:0`16 3-`8 3+`8 7+3--`16 7+`8",  # original, but I prefer to change it
     # r"3-:-1`16*p<articulation.name='.'> r`16 3-*p r 3- r 3- r`3/16 3-`16 r 3- r",
-    r"3-:-1`16*p<articulation.name='.'> r`16 3-*p r 3- r 3- r`3/16 3-`16 r 3- r 3- r 3-",
+    r"3-:-1`16*p<articulation.name='.'> r`16 3-*p r 3- r 3- r`5/16 3-`16 r 3- r 3- r 3-",
     # tambem
     r"3-`16 7+3--`8 3+`4",
 )
@@ -87,6 +89,116 @@ fado_part_sequential_event_tuple[9].set_parameter(
 )
 # changed manually in mmml string (therefore commented)
 # fado_part_sequential_event_tuple[10].set_parameter("pitch_list", "2/3")
+
+for index in (0, 3):
+    fado_part_sequential_event_tuple[0][
+        index
+    ].playing_indicator_collection.articulation.name = "."
+
+for index in (1, 2):
+    fado_part_sequential_event_tuple[0][index].pitch_list = []
+    fado_part_sequential_event_tuple[0][
+        index
+    ].grace_note_sequential_event = core_events.SequentialEvent([])
+
+
+for index, fancy_glissando_command in (
+    (
+        0,
+        (
+            (1, 0, 0, 0, 0, 0),
+            (2, 0.25),
+            (3, 0.74),
+            (4, 0.5),
+            (5, 0.75),
+            (6, 0, 4, 4, 20, 0),
+        ),
+    ),
+    (
+        1,
+        (
+            (1, 0, 0, 0, 0, 0),
+            (2, 0),
+            (3, -0.1),
+            (4, -0.4),
+            (5, -1.2),
+            (6, -0.35),
+            (7, 0),
+            (8, 0),
+            (9, 0.1),
+            (10, 0.5),
+            (11, 1.1),
+            (12, 0.7),
+            (13, 0.5),
+            (14, 0.3),
+            (15, 0.1),
+            (16, 0),
+            (17, 0),
+            (18, 0),
+            (19, 0),
+            (33, 0, 0, 0, 25, 0),
+        ),
+    ),
+    (
+        2,
+        (
+            (1, 0, 0, 0, 0, 0),
+            (2, 0),
+            (3, 0),
+            (4, 0),
+            (5, 0),
+            (6, 0.1),
+            (7, 0.3),
+            (8, 0.5),
+            (9, 0.7),
+            (10, 0.9),
+            (11, 1.5),
+            (12, 1.9),
+            (13, 2),
+            (14, 1.9),
+            (15, 1.5),
+            (16, 1.2),
+            (17, 0.8),
+            (18, 0.7),
+            (19, 0.6),
+            (20, 0.5),
+            (21, 0.4),
+            (20, 0.3),
+            (21, 0.2),
+            (22, 0.1),
+            (23, 0.05),
+            (24, 0),
+            (33, 0, 33, 0, 33, 0),
+        ),
+    ),
+):
+    fado_part_sequential_event_tuple[4][
+        index
+    ].playing_indicator_collection.fancy_glissando.command = fancy_glissando_command
+
+fado_part_sequential_event_tuple[4][4].playing_indicator_collection.glissando = True
+fado_part_sequential_event_tuple[4][5].pitch_list = music_parameters.WesternPitch(
+    "g", 5
+)
+fado_part_sequential_event_tuple[4][
+    5
+].playing_indicator_collection.bend_after.bend_amount = -3
+# fado_part_sequential_event_tuple[4][5].playing_indicator_collection.glissando = True
+# fado_part_sequential_event_tuple[4][
+#     5
+# ].after_grace_note_sequential_event = core_events.SequentialEvent(
+#     [music_events.NoteLike("f", fractions.Fraction(1, 8))]
+# )
+
+fado_part_sequential_event_tuple[5][0].pitch_list = "7/3"
+fado_part_sequential_event_tuple[5][1].pitch_list = "9/4"
+# for note_like in fado_part_sequential_event_tuple[5]:
+#     note_like.set_parameter(
+#         "pitch_list",
+#         lambda pitch_list: [
+#             pitch + music_parameters.JustIntonationPitch("2/1") for pitch in pitch_list
+#         ],
+#     )
 
 # Remove articulation from rests
 for sequential_event in fado_part_sequential_event_tuple:

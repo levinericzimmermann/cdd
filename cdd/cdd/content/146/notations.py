@@ -118,7 +118,7 @@ class SopranoAndClarinetSimultaneousEventToAbjadScore(
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._clarinet_sequential_event_to_abjad_staff = SequentialEventToAbjadStaff(
-            sequential_event_to_quantized_abjad_container=self._sequential_event_to_quantized_abjad_container_converter,
+            sequential_event_to_quantized_abjad_container=self._sequential_event_to_quantized_abjad_container,
             mutwo_volume_to_abjad_attachment_dynamic=None,
         )
 
@@ -400,7 +400,11 @@ def notate_soprano(chapter: cdd.chapters.Chapter):
     lilypond_file_path_list = []
     for index, abjad_score in enumerate(abjad_score_list):
         lilypond_file = abjad_score_list_to_lilypond_file.convert(
-            [abjad_score], add_ekmelily=True, add_book_preamble=True, margin=0
+            [abjad_score],
+            add_ekmelily=True,
+            add_book_preamble=True,
+            add_fancy_glissando=True,
+            margin=0,
         )
         lilypond_file_path = f"{lilypond_file_path_base}_{index}.pdf"
         abjad.persist.as_pdf(lilypond_file, lilypond_file_path)

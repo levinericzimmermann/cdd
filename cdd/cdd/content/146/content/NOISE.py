@@ -2,9 +2,9 @@ from mutwo import core_utilities
 
 from . import SOPRANO
 
-initial_rest = 25
+initial_rest = 27
 
-period_in_seconds = 30
+period_in_seconds = 28
 
 duration = SOPRANO.duration
 

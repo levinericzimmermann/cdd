@@ -1,6 +1,5 @@
 # import itertools
 import warnings
-import typing
 
 import abjad
 import quicktions as fractions
@@ -81,13 +80,30 @@ class CentDeviation(
         return leaf
 
 
+class FancyGlissando(
+    cdd_parameters.FancyGlissando, abjad_parameters.abc.BangFirstAttachment
+):
+    @staticmethod
+    def _command_to_lilypond_string(command: tuple[tuple[float, ...], ...]):
+        lilypond_string = ""
+        for part in command:
+            lilypond_string += "({})\n".format(" ".join(map(str, part)))
+        return fr"\fancy-gliss #'({lilypond_string})"
+
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        leaf = abjad.mutate.copy(leaf)
+        fancy_glissando = FancyGlissando._command_to_lilypond_string(self.command)
+        abjad.attach(abjad.LilyPondLiteral(fancy_glissando, format_slot="before"), leaf)
+        abjad.attach(abjad.Glissando(), leaf)
+        return leaf
+
+
 class IrregularGlissando(
     music_parameters.abc.ExplicitPlayingIndicator,
     abjad_parameters.abc.BangFirstAttachment,
 ):
     def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
         leaf = abjad.mutate.copy(leaf)
-
         fancy_glissando = r"""
 \fancy-gliss
         #'(
@@ -103,14 +119,12 @@ class IrregularGlissando(
             abjad.LilyPondLiteral(fancy_glissando, format_slot="before"),
             leaf,
         )
-
         if hasattr(leaf, "note_head"):
             pitch = leaf.note_head.written_pitch
         elif hasattr(leaf, "note_heads"):
             pitch = leaf.note_heads[0].written_pitch
         else:
             raise NotImplementedError()
-
         hidden_leaf = abjad.Note(pitch, fractions.Fraction(1, 64))
         omit = r"\once \omit"
         abjad.attach(
@@ -137,5 +151,5 @@ class IrregularGlissando(
 # override mutwo default value
 abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE = (
     abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE
-    + (CentDeviation, IrregularGlissando)
+    + (CentDeviation, FancyGlissando, IrregularGlissando)
 )
