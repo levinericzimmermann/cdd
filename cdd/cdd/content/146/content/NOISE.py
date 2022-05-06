@@ -8,7 +8,7 @@ period_in_seconds = 28
 
 duration = SOPRANO.duration
 
-event_to_skip_index_tuple = (4, 8, 9, 10, 12, 14, 15)
+event_to_skip_index_tuple = (4, 5, 8, 9, 10, 12, 14, 15)
 
 absolute_time_tuple = tuple(
     absolute_time

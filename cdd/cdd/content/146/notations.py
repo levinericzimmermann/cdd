@@ -357,6 +357,14 @@ def add_last_phrase_hairpin(last_score):
         cdd.utilities.add_last_bar_line(last_leaf)
 
 
+        leaves = abjad.select(staff).leaves()
+        leaf_8 = leaves[8]
+        last_leaf = leaves[-1]
+
+        abjad.attach(abjad.StartTextSpan(left_text=abjad.Markup("rit.")), leaf_8)
+        abjad.attach(abjad.StopTextSpan(), last_leaf)
+
+
 def notate_soprano(chapter: cdd.chapters.Chapter):
     instrument = "soprano"
     abjad_score_list_to_lilypond_file = AbjadScoreListToLilyPondFile()

@@ -25,7 +25,8 @@
 # at the "sonho" parts of the singing.
 
 import collections
-import copy
+
+# import copy
 import functools
 import itertools
 import operator
@@ -913,9 +914,12 @@ def get_sequential_event_tuple(clavichord_ambitus):
                 [0.5, 0],
                 [0.57, 0],
                 [0.63, 0],
-                [0.67, 3],
+                # [0.67, 3],
+                # [0.75, 4],
+                # [0.79, 6],
+                [0.67, 4],
                 [0.75, 4],
-                [0.79, 6],
+                [0.79, 4],
                 [0.83, 0],
                 [1, 0],
             ]
@@ -1047,6 +1051,11 @@ sequential_event_tuple = tuple(
         sequential_event_tuple_version_1,
         version_tuple,
     )
+)
+
+
+sequential_event_tuple[9][-2].pitch_list.append(
+    music_parameters.JustIntonationPitch("14/9")
 )
 
 

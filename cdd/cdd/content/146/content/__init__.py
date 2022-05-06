@@ -199,6 +199,13 @@ class Chapter(cdd.chapters.Chapter):
             12
         ].pitch_list = "7/12"
 
+        for sequential_event in soprano_and_clarinet_unisono_simultaneous_event_list[
+            -2
+        ]:
+            sequential_event[
+                -1
+            ].playing_indicator_collection.fermata.fermata_type = "fermata"
+
         for simultaneous_event in soprano_and_clarinet_unisono_simultaneous_event_list:
             for sequential_event in simultaneous_event:
                 cdd.utilities.add_cent_deviation_to_sequential_event(sequential_event)
