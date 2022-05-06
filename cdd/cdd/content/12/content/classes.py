@@ -125,7 +125,7 @@ TRANSFORMER_COLLECTION = TransformerCollection(
 
 @dataclasses.dataclass()
 class Pattern(object):
-    pattern: tuple[int, ...]
+    pattern: tuple[typing.Union[int, tuple[int, ...]], ...]
 
     def reverse(self) -> Pattern:
         return type(self)(tuple(reversed(self.pattern)))
@@ -133,7 +133,10 @@ class Pattern(object):
     def to_sequential_event(
         self, pitch_tuple: tuple[music_parameters.abc.Pitch, ...]
     ) -> core_events.SequentialEvent:
-        assert max(self.pattern) < len(pitch_tuple)
+        pattern_maxima = max(
+            [item if isinstance(item, int) else max(item) for item in self.pattern]
+        )
+        assert pattern_maxima < len(pitch_tuple)
 
         sequential_event = core_events.SequentialEvent([])
         for index_or_index_tuple in self.pattern:
@@ -350,7 +353,12 @@ class GroupCollection(object):
                 event0.pitch_list,
                 not event1.pitch_list,
                 is_fraction_acceptable(summed_duration)
-                or all([is_fraction_acceptable(event.duration) for event in (event0, event1)]),
+                or all(
+                    [
+                        is_fraction_acceptable(event.duration)
+                        for event in (event0, event1)
+                    ]
+                ),
             ]
             return all(test_list)
 

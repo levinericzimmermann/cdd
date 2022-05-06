@@ -8,6 +8,7 @@ import cdd
 from . import constants
 from . import configurations
 from . import classes
+from . import tapes
 
 
 class Chapter(cdd.chapters.Chapter):
@@ -17,7 +18,7 @@ repeat song ad libitum.
 
     instrument_name_to_instruction_text = {
         "soprano": rf"""{instruction_text} only sing vowels (pass parenthetical letters).
-if a note has multiple vowels, interpolate between them over the course of the tone.
+if a note has multiple vowels, interpolate between them over the course of the given tone.
 """,
         "clarinet": instruction_text,
         "clavichord": instruction_text,
@@ -32,6 +33,12 @@ if a note has multiple vowels, interpolate between them over the course of the t
         self.time_signature_sequence = self.group_collection.to_time_signature_tuple
         # Ensure order of instruments is correct
         self.sort_simultaneous_event()
+
+        self.metronome_sequential_event = (
+            tapes.TimeSignatureSequenceToSimultaneousEvent()(
+                self.time_signature_sequence
+            )
+        )
 
     @staticmethod
     def _maxima_and_percentage_to_duration(maxima, percentage):
@@ -49,13 +56,20 @@ if a note has multiple vowels, interpolate between them over the course of the t
         duration: fractions.Fraction,
     ) -> classes.LongTone:
         if are_instruments_locked:
-            maxima_duration = configurations.MAXIMUM_CHORD_DURATION_IN_SECONDS
+            maxima_duration_in_seconds = (
+                configurations.MAXIMUM_CHORD_DURATION_IN_SECONDS
+            )
         else:
             if instrument_name == "soprano":
-                maxima_duration = cdd.constants.SOPRANO_MAXIMUM_TONE_DURATION
+                maxima_duration_in_seconds = cdd.constants.SOPRANO_MAXIMUM_TONE_DURATION
             else:
-                maxima_duration = cdd.constants.CLARINET_MAXIMUM_TONE_DURATION
+                maxima_duration_in_seconds = (
+                    cdd.constants.CLARINET_MAXIMUM_TONE_DURATION
+                )
 
+        maxima_duration = maxima_duration_in_seconds * (
+            configurations.BASE_TEMPO.tempo_in_beats_per_minute / 60
+        )
         maxima_duration = min((maxima_duration, duration))
 
         duration_percentage, delay_percentage, hairpin = long_tone_data
@@ -123,10 +137,21 @@ if a note has multiple vowels, interpolate between them over the course of the t
         return chord
 
     def get_group_collection(self) -> classes.GroupCollection:
+        chord_count = len(constants.CHORD_SEQUENTIAL_EVENT)
+        assert chord_count == 13
+        for sequence in (
+            constants.CHORD_SEQUENTIAL_EVENT.get_parameter("pitch_list"),
+            configurations.LONG_TONE_DATA_TUPLE,
+            configurations.PATTERN_TUPLE,
+            configurations.DENSITY_ENVELOPE_TUPLE,
+            configurations.TRANSFORM_ACTIVITY_LEVEL_TUPLE,
+        ):
+            try:
+                assert len(sequence) == chord_count
+            except AssertionError:
+                raise ValueError("sequence is too short: {sequence}")
         group_list = []
         chord_list = []
-        chord_count = len(constants.CHORD_SEQUENTIAL_EVENT)
-        last_index = chord_count - 1
         for (
             index,
             pitch_list,
@@ -142,9 +167,7 @@ if a note has multiple vowels, interpolate between them over the course of the t
             configurations.DENSITY_ENVELOPE_TUPLE,
             configurations.TRANSFORM_ACTIVITY_LEVEL_TUPLE,
         ):
-            if index and (
-                index in constants.NEW_GROUP_INDEX_TUPLE or index == last_index
-            ):
+            if index and (index in constants.NEW_GROUP_INDEX_TUPLE):
                 group_list.append(classes.Group(tuple(chord_list)))
                 chord_list = []
 
@@ -156,6 +179,8 @@ if a note has multiple vowels, interpolate between them over the course of the t
                 transform_activity_level,
             )
             chord_list.append(chord)
+
+        group_list.append(classes.Group(tuple(chord_list)))
 
         return classes.GroupCollection(
             group_list, self, configurations.REST_TIME_SIGNATURE_TUPLE

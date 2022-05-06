@@ -18,7 +18,10 @@ class EventToVolumeControl(csound_converters.EventToSoundFile):
 instr 1
     asig poscil 1, 200
     istartAndEnd = p3 * 0.4
-    icenter = p3 * 0.2
+    if (istartAndEnd >= 10) then
+        istartAndEnd = 10
+    endif
+    icenter = p3 - (istartAndEnd * 2)
     kenv expseg p4, istartAndEnd, p5, icenter, p5, istartAndEnd, p6
     out asig * kenv
 endin
@@ -117,7 +120,7 @@ def main(chapter: cdd.chapters.Chapter):
         )
         if instrument_name == "soprano":
             sound_file_path = chapter.get_sound_file_path(instrument_name)
-            event_to_singing_synthesis.convert(tagged_sequential_event, sound_file_path)
+            # event_to_singing_synthesis.convert(tagged_sequential_event, sound_file_path)
         tagged_sequential_event.duration *= 2
         tagged_sequential_event = functools.reduce(
             operator.add,

@@ -8,6 +8,8 @@ from mutwo import core_utilities
 
 from cdd import constants
 
+from . import utilities as utilities12
+
 
 # Add new method to SequentialEvent which in the current
 # mutwo.ext-core version doesn't exist yet.
@@ -70,7 +72,6 @@ PITCH_ORDER = ("clavichord", "soprano", "clarinet")
 # Rest appears when there are wolfsquinten between chords.
 GROUP_COUNT_TUPLE = (2, 5, 4, 2)
 
-
 BASE_TEMPO = core_parameters.TempoPoint(45, reference=2)
 
 BEAT_SIZE = fractions.Fraction(1, 2)
@@ -113,13 +114,6 @@ TRANSFORMER_DATA_TUPLE = (
     # ############################################################# #
     (
         lambda sequential_event: set_duration(
-            sequential_event, ((1, 3), (2, 3), (2, 3), (1, 3))
-        ),
-        4,
-        4,
-    ),
-    (
-        lambda sequential_event: set_duration(
             sequential_event, ((1, 2), (1, 1), (1, 2), (1, 2))
         ),
         4,
@@ -137,14 +131,7 @@ TRANSFORMER_DATA_TUPLE = (
     # ############################################################# #
     (
         lambda sequential_event: set_duration(
-            sequential_event, ((2, 3), (1, 3), (1, 3), (1, 3), (1, 3))
-        ),
-        5,
-        4,
-    ),
-    (
-        lambda sequential_event: set_duration(
-            sequential_event, ((2, 5), (2, 5), (2, 5), (2, 5), (2, 5))
+            sequential_event, ((1, 2), (1, 4), (1, 2), (1, 2), (1, 4))
         ),
         5,
         4,
@@ -158,76 +145,63 @@ TRANSFORMER_DATA_TUPLE = (
 LONG_TONE_DATA_TUPLE = (
     # (duration_percentage, delay_percentage, hairpin)
     # (soprano, clarinet, are_locked)
-    ((0.6, 1, "<>"), (0.6, 1, "<>"), True),
-    ((0.5, 0.7, "<>"), (0.5, 0.7, "<>"), True),
-    ((1, 0, "<"), (1, 0, "<>"), True),
-    ((0.5, 0, ">"), (0.5, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
-    ((1, 0, "<>"), (1, 0, "<>"), True),
+    # NEW GROUP
+    ((0.8, 1, "<>"), (0.8, 1, "<>"), True),
+    ((0.8, 0.7, "<>"), (0.65, 0.7, "<>"), False),
+    # NEW GROUP
+    ((1, 0.7, "<"), (1, 0.7, "<"), True),
+    ((0.99, 0, ">"), (1, 0, "<"), True),
+    ((1, 0, "<"), (1, 0, ">"), True),
+    ((1, 0, ">"), (1, 0, ">"), True),
+    # CENTER
+    ((0.85, 0.8, "<>"), (1, 0, "<>"), False),
 )
+LONG_TONE_DATA_TUPLE += utilities12.reverse_long_tone_data_tuple(LONG_TONE_DATA_TUPLE)
 
 PATTERN_TUPLE = (
     # NEW GROUP
-    ((0, 1, 2, 3), 4),
-    ((1, 0, 1, 0, 2), 5),
+    ((0, 1, 2, 3), 7),
+    ((1, 0, 1, 0, 2), 8),
     # NEW GROUP
-    ((3, 2, 1, 0), 2),
-    ((0, 1, 2), 4),
-    ((0, 1, 2, 3), 2),
-    ((0, 1, 2, 3), 2),
-    ((0, 1, 2, 3), 2),
-    # NEW GROUP
-    ((0, 1, 2, 3), 2),
-    ((0, 1, 2, 3), 2),
-    ((0, 1, 2, 3), 2),
-    ((0, 1, 2, 3), 2),
-    ((0, 1, 2, 3), 2),
-    ((0, 1, 2, 3), 2),
+    ((3, 2, 1, 0), 4),
+    ((0, 1, 2), 3),
+    (((1, 2), (0, 3), 1, 0), 4),
+    ((2, 2, 1, 3, 0), 7),
+    # CENTER
+    (((0, 1, 2, 3), 0, 1, 1, (0, 1, 2, 3), 2, 3, 3), 4),
 )
+PATTERN_TUPLE += utilities12.reverse_tuple(PATTERN_TUPLE)
 
 TRANSFORM_ACTIVITY_LEVEL_TUPLE = (
-    # NEW GROUP
-    5,
+    # new group
     4,
-    # NEW GROUP
-    5,
-    5,
     6,
-    5,
+    # new group
     4,
-    # NEW GROUP
+    3,
+    8,
     4,
-    5,
-    6,
-    5,
-    # NEW GROUP
-    5,
+    # center!
     4,
+)
+TRANSFORM_ACTIVITY_LEVEL_TUPLE += utilities12.reverse_tuple(
+    TRANSFORM_ACTIVITY_LEVEL_TUPLE
 )
 
 DENSITY_ENVELOPE_TUPLE = (
     # NEW GROUP
     [[0, 0.3], [0.9, 0.6]],
-    [[0, 0.4], [0.8, 0.1], [1, 0]],
+    [[0, 0.5], [0.3, 0.3], [0.8, 0.1], [1, 0]],
     # NEW GROUP
-    [[0, 0.3], [1, 1]],
-    [[0, 1], [1, 0.2]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
-    [[0, 0.8], [1, 0.8]],
+    [[0, 0.3], [1, 0.8]],
+    [[0, 0.8], [0.8, 0.5], [1, 0.4]],
+    [[0, 0.35], [1, 0.6]],
+    [[0, 0.6], [1, 0.1]],
+    # CENTER
+    [[0, 0.3], [1, 0.3]],
+)
+DENSITY_ENVELOPE_TUPLE += utilities12.reverse_density_envelope_tuple(
+    DENSITY_ENVELOPE_TUPLE
 )
 
 # There are 3 rests
