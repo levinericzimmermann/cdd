@@ -155,3 +155,4 @@ develop-eggs/
 
 # No pickled data
 *.pickled
+*.pickle
