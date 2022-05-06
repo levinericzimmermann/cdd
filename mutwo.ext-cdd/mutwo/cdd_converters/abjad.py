@@ -1,13 +1,8 @@
 import abjad
 
-from mutwo import abjad_converters
 from mutwo import core_converters
 
-__all__ = ("AbjadScoreListToLilyPondFile",)
-
-
-# Monkey patch abjad to fix bug: first grace note will have flags
-# in duration line mode
+from . import abjad_patches
 
 
 class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):
@@ -54,11 +49,13 @@ class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):
         abjad_score_list: list[abjad.Score],
         add_book_preamble: bool = False,
         add_ekmelily: bool = False,
-        add_fancy_glissando:bool=False,
+        add_fancy_glissando: bool = False,
         margin: float = 1,
     ) -> abjad.LilyPondFile:
         includes = self.get_includes(
-            add_ekmelily=add_ekmelily, add_book_preamble=add_book_preamble, add_fancy_glissando=add_fancy_glissando
+            add_ekmelily=add_ekmelily,
+            add_book_preamble=add_book_preamble,
+            add_fancy_glissando=add_fancy_glissando,
         )
         lilypond_file = abjad.LilyPondFile(includes=includes)
 
