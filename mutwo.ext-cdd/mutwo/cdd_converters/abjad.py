@@ -37,9 +37,9 @@ class AbjadScoreListToLilyPondFile(core_converters.abc.Converter):
     ) -> list[str]:
         includes = []
         if add_book_preamble:
-            includes.append("lilypond-book-preamble.ly")
+            includes.append("etc/lilypond/lilypond-book-preamble.ly")
         if add_ekmelily:
-            includes.append("ekme-heji-ref-c.ily")
+            includes.append("etc/lilypond/ekme-heji-ref-c.ily")
         if add_fancy_glissando:
             includes.append("etc/lilypond/fancy-glissando.ly")
         return includes
