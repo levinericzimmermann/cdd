@@ -1,6 +1,8 @@
+import typing
+
 import abjad
 import quicktions as fractions
-import typing
+import ranges
 
 from mutwo import core_events
 from mutwo import core_parameters
@@ -72,7 +74,24 @@ PITCH_ORDER = ("clavichord", "soprano", "clarinet")
 # Rest appears when there are wolfsquinten between chords.
 GROUP_COUNT_TUPLE = (2, 5, 4, 2)
 
-BASE_TEMPO = core_parameters.TempoPoint(45, reference=2)
+TEMPO_REFERENCE = fractions.Fraction(2, 1)
+
+BASE_TEMPO = core_parameters.TempoPoint(45, reference=TEMPO_REFERENCE)
+
+MIN_TEMPO_FACTOR = 0.75
+
+MAX_TEMPO_FACTOR = 1.5
+
+TEMPO_POINT_COUNT = 4
+
+TEMPO_CHANGE_LOOP_SIZE_RANGE = ranges.Range(3, 6)
+
+TEMPO_CHANGE_BAR_COUNT_RANGE = ranges.Range(2, 5)
+
+TEMPO_CHANGE_LOOP_BAR_COUNT_RANGE = ranges.Range(
+    TEMPO_CHANGE_BAR_COUNT_RANGE.start * TEMPO_CHANGE_LOOP_SIZE_RANGE.start,
+    TEMPO_CHANGE_BAR_COUNT_RANGE.end * TEMPO_CHANGE_LOOP_SIZE_RANGE.end,
+)
 
 BEAT_SIZE = fractions.Fraction(1, 2)
 
@@ -146,10 +165,10 @@ LONG_TONE_DATA_TUPLE = (
     # (duration_percentage, delay_percentage, hairpin)
     # (soprano, clarinet, are_locked)
     # NEW GROUP
-    ((0.8, 1, "<>"), (0.8, 1, "<>"), True),
+    ((1, 1, "<>"), (1, 1, "<>"), True),
     ((0.8, 0.7, "<>"), (0.65, 0.7, "<>"), False),
     # NEW GROUP
-    ((1, 0.7, "<"), (1, 0.7, "<"), True),
+    ((1, 1, "<"), (1, 1, "<"), True),
     ((0.99, 0, ">"), (1, 0, "<"), True),
     ((1, 0, "<"), (1, 0, ">"), True),
     ((1, 0, ">"), (1, 0, ">"), True),
@@ -165,8 +184,8 @@ PATTERN_TUPLE = (
     # NEW GROUP
     ((3, 2, 1, 0), 4),
     ((0, 1, 2), 3),
-    (((1, 2), (0, 3), 1, 0), 4),
-    ((2, 2, 1, 3, 0), 7),
+    (((1, 2), (0, 3), 1, 0), 2),
+    ((2, 2, 1, 3, 0), 5),
     # CENTER
     (((0, 1, 2, 3), 0, 1, 1, (0, 1, 2, 3), 2, 3, 3), 4),
 )

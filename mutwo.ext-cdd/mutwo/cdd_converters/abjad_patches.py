@@ -94,7 +94,7 @@ abjad.LeafMaker._make_tied_leaf = LeafMaker__make_tied_leaf
 # def LeafMaker__call__(self, pitches, durations) -> abjad.Selection:
 #     """
 #     Calls leaf-maker on ``pitches`` and ``durations``.
-# 
+#
 #     Returns selection.
 #     """
 #     if isinstance(pitches, str):
@@ -158,8 +158,8 @@ abjad.LeafMaker._make_tied_leaf = LeafMaker__make_tied_leaf
 #             tuplet = abjad.Tuplet(multiplier, tuplet_leaves)
 #             result.append(tuplet)
 #     return abjad.Selection(result)
-# 
-# 
+#
+#
 # abjad.LeafMaker.__call__ = LeafMaker__call__
 
 # Monkey patch RMakersSequentialEventToQuantizedAbjadContainer in order
@@ -197,3 +197,20 @@ abjad_converters.RMakersSequentialEventToQuantizedAbjadContainer._make_notes = (
 )
 
 
+# Monkey patch abjad.NoteHead in order to allow adding lilypond literals to NoteHeads
+
+abjad_NoteHead_get_format_pieces = abjad.NoteHead._get_format_pieces
+
+
+def NoteHead__get_format_pieces(self) -> list[str]:
+    format_pieces = abjad_NoteHead_get_format_pieces(self)
+    if (
+        hasattr(self, "lilypond_literal")
+        and self.lilypond_literal
+        and isinstance(self.lilypond_literal, str)
+    ):
+        format_pieces.append(self.lilypond_literal)
+    return format_pieces
+
+
+abjad.NoteHead._get_format_pieces = NoteHead__get_format_pieces

@@ -148,8 +148,55 @@ class IrregularGlissando(
         return voice
 
 
+class NoteHead(cdd_parameters.NoteHead, abjad_parameters.abc.BangEachAttachment):
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                fr"\override NoteHead.style = #'{self.style}",
+                format_slot="absolute_before",
+            ),
+            leaf,
+        )
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                fr"\override NoteHead.style = #'{self.default_style}",
+                format_slot="absolute_after",
+            ),
+            leaf,
+        )
+        return leaf
+
+
+class NoteHeadHintList(
+    cdd_parameters.NoteHeadHintList, abjad_parameters.abc.BangFirstAttachment
+):
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                (
+                    r"\set fingeringOrientations = #'(right) "
+                    rf"\override Fingering.font-size = #{self.font_size}"
+                ),
+                format_slot="absolute_before",
+            ),
+            leaf,
+        )
+
+        if hasattr(leaf, "note_head"):
+            note_head_list = [leaf.note_head]
+        elif hasattr(leaf, "note_heads"):
+            note_head_list = leaf.note_heads
+        else:
+            note_head_list = []
+
+        for note_head, hint in zip(note_head_list, self.hint_list):
+            note_head.lilypond_literal = fr'\finger "({hint})"'
+
+        return leaf
+
+
 # override mutwo default value
 abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE = (
     abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE
-    + (CentDeviation, FancyGlissando, IrregularGlissando)
+    + (CentDeviation, FancyGlissando, IrregularGlissando, NoteHead, NoteHeadHintList)
 )

@@ -1,6 +1,8 @@
 import quicktions as fractions
 
+from mutwo import core_converters
 from mutwo import core_events
+from mutwo import music_events
 from mutwo import music_parameters
 
 import cdd
@@ -9,18 +11,35 @@ from . import constants
 from . import configurations
 from . import classes
 from . import tapes
+from . import tempos
+
+StartTime, EndTime = float, float
+DoesNextEventFollowsImmediately = bool
+SustainingInstrumentData = tuple[
+    StartTime,
+    EndTime,
+    core_events.SequentialEvent,  # sustaining instrument
+    core_events.SequentialEvent,  # environment
+    DoesNextEventFollowsImmediately,
+]
 
 
 class Chapter(cdd.chapters.Chapter):
     instruction_text = r"""as quiet as possible.
 repeat song ad libitum.
 """
+    instruction_text = r""""""
+
+    instruction_text_sustaining_instrument = rf"""{instruction_text}
+start \& end tones at given times.
+arrow = next tone follows immediately.
+"""
 
     instrument_name_to_instruction_text = {
-        "soprano": rf"""{instruction_text} only sing vowels (pass parenthetical letters).
-if a note has multiple vowels, interpolate between them over the course of the given tone.
+        "soprano": rf"""{instruction_text_sustaining_instrument} only sing vowels (pass parenthetical letters).
+if a note has multiple vowels: interpolate between them over the course of the given tone.
 """,
-        "clarinet": instruction_text,
+        "clarinet": instruction_text_sustaining_instrument,
         "clavichord": instruction_text,
     }
 
@@ -29,16 +48,18 @@ if a note has multiple vowels, interpolate between them over the course of the g
 
         self.group_collection = self.get_group_collection()
         self.simultaneous_event = self.group_collection.to_simultaneous_event
-        self.tempo_envelope = self.group_collection.to_tempo_envelope
+        # self.tempo_envelope = self.group_collection.to_tempo_envelope
         self.time_signature_sequence = self.group_collection.to_time_signature_tuple
+        self.tempo_envelope = tempos.make_tempo_envelope(self.time_signature_sequence)
+
         # Ensure order of instruments is correct
         self.sort_simultaneous_event()
 
         self.metronome_sequential_event = (
-            tapes.TimeSignatureSequenceToSimultaneousEvent()(
-                self.time_signature_sequence
-            )
+            tapes.TimeSignatureSequenceToSequentialEvent()(self.time_signature_sequence)
         )
+
+        self.sustaining_instrument_dict = self.make_sustaining_instrument_data()
 
     @staticmethod
     def _maxima_and_percentage_to_duration(maxima, percentage):
@@ -68,7 +89,7 @@ if a note has multiple vowels, interpolate between them over the course of the g
                 )
 
         maxima_duration = maxima_duration_in_seconds * (
-            configurations.BASE_TEMPO.tempo_in_beats_per_minute / 60
+            configurations.BASE_TEMPO.tempo_in_beats_per_minute / 120
         )
         maxima_duration = min((maxima_duration, duration))
 
@@ -197,3 +218,104 @@ if a note has multiple vowels, interpolate between them over the course of the g
                 for tag in ("soprano", "clarinet", "clavichord")
             ]
         )
+
+    def make_sustaining_instrument_data(
+        self,
+    ) -> dict[str, tuple[SustainingInstrumentData, ...]]:
+        instrument_name_to_data = {}
+
+        tempo_converter = core_converters.TempoConverter(self.tempo_envelope)
+        for sustaining_instrument_name in (
+            cdd.constants.SOPRANO,
+            cdd.constants.CLARINET,
+        ):
+            sequential_event = tuple(
+                self.simultaneous_event.get_event_iterator_by(
+                    tag=sustaining_instrument_name
+                )
+            )[0]
+            sequential_event_with_correct_tempo = tempo_converter(
+                sequential_event.set_parameter(
+                    "duration", lambda duration: duration * 4, mutate=False
+                )
+            )
+
+            content_duration = fractions.Fraction(4, 1)
+            environment_duration = content_duration
+            event_data_list = []
+            event_index = 0
+            absolute_time_tuple = (
+                sequential_event_with_correct_tempo.absolute_time_tuple
+            )
+            for (
+                absolute_start_time_in_seconds,
+                absolute_end_time_in_seconds,
+                simple_event_or_note_like,
+            ) in zip(absolute_time_tuple, absolute_time_tuple[1:], sequential_event):
+                if (
+                    hasattr(simple_event_or_note_like, "pitch_list")
+                    and simple_event_or_note_like.pitch_list
+                ):
+                    note_like = simple_event_or_note_like.set_parameter(
+                        "duration", content_duration, mutate=False
+                    )
+                    local_sequential_event = core_events.SequentialEvent([note_like])
+
+                    environment_pitch_list = []
+                    instrument_name_list = []
+                    for pitch, instrument_name in zip(
+                        constants.CHORD_SEQUENTIAL_EVENT[event_index].pitch_list,
+                        configurations.PITCH_ORDER,
+                    ):
+                        if instrument_name != sustaining_instrument_name:
+                            environment_pitch_list.append(pitch)
+                            instrument_name_list.append(instrument_name)
+
+                    # don't change order of sorting!
+                    instrument_name_list = sorted(
+                        instrument_name_list,
+                        key=lambda instrument_name: environment_pitch_list[
+                            instrument_name_list.index(instrument_name)
+                        ],
+                    )
+                    environment_pitch_list = sorted(environment_pitch_list)
+
+                    environment_note_like = music_events.NoteLike(
+                        environment_pitch_list, environment_duration
+                    )
+                    environment_note_like.notation_indicator_collection.note_head_hint_list.hint_list = [
+                        # cdd.constants.INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME[
+                        #     instrument_name
+                        # ]
+                        instrument_name.upper()
+                        for instrument_name in instrument_name_list
+                    ]
+
+                    environment_sequential_event = core_events.SequentialEvent(
+                        [environment_note_like]
+                    )
+
+                    event_data = [
+                        absolute_start_time_in_seconds,
+                        absolute_end_time_in_seconds,
+                        local_sequential_event,
+                        environment_sequential_event,
+                    ]
+                    event_data_list.append(event_data)
+                    event_index += 1
+
+            for event_data0, event_data1 in zip(event_data_list, event_data_list[1:]):
+                end0, start1 = event_data0[1], event_data1[0]
+                does_next_event_follows_immediately = start1 - end0 < 4
+                event_data0.append(does_next_event_follows_immediately)
+
+            event_data_list[-1].append(False)
+            event_data_tuple = tuple(
+                tuple(event_data) for event_data in event_data_list
+            )
+
+            instrument_name_to_data.update(
+                {sustaining_instrument_name: event_data_tuple}
+            )
+
+        return instrument_name_to_data

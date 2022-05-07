@@ -149,14 +149,22 @@ CLAVICHORD_SEQUENTIAL_EVENT_TO_TABULATURA_BASED_EVENT = cdd_converters.Sequentia
     ),
 )
 
+(
+    SOPRANO,
+    CLARINET,
+    CLAVICHORD,
+    NOISE,
+    PERCUSSION,
+) = "soprano clarinet clavichord noise percussion".split(" ")
+
 INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {
-    "soprano": "s.",
-    "clarinet": "cl.",
-    "clavichord": "cv.",
-    "noise": "n.",
+    SOPRANO: "s.",
+    CLARINET: "cl.",
+    CLAVICHORD: "cv.",
+    NOISE: "n.",
 }
 
-ADDED_INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {"percussion": "perc."}
+ADDED_INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME = {PERCUSSION: "perc."}
 
 SHORT_INSTRUMENT_NAME_TO_INSTRUMENT_NAME = {
     short_instrument_name: instrument_name

@@ -1,4 +1,3 @@
-import datetime
 import itertools
 import typing
 
@@ -144,13 +143,6 @@ def clarinet_event_to_notatable_clarinet_event(
         )
     )
     return transposed_clarinet_event
-
-
-def duration_in_seconds_to_readable_duration(duration_in_seconds: float) -> str:
-    _, minutes, seconds = str(datetime.timedelta(seconds=duration_in_seconds)).split(
-        ":"
-    )
-    return f"{minutes}'{seconds[:2]}"
 
 
 def is_rest(event: core_events.SimpleEvent) -> bool:

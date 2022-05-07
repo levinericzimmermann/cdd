@@ -6,6 +6,7 @@ import pylatex
 
 from mutwo import abjad_converters
 from mutwo import cdd_converters
+from mutwo import cdd_utilities
 from mutwo import core_events
 from mutwo import core_parameters
 from mutwo import music_events
@@ -87,7 +88,7 @@ class SopranoSequentialEventToAbjadScore(SequentialEventToAbjadStaff):
         abjad_staff = super().convert(event_to_convert)
         start_time_markup = abjad.Markup(
             f"\\typewriter {{ \\{start_size} {{ start at "
-            f"{cdd.utilities.duration_in_seconds_to_readable_duration(absolute_time_in_seconds)}"
+            f"{cdd_utilities.duration_in_seconds_to_readable_duration(absolute_time_in_seconds)}"
             "} }",
             direction="up",
         )
@@ -273,7 +274,7 @@ class ClavichordSimultaneousEventToAbjadScore(SequentialEventToAbjadStaff):
             )
             abjad_staff.remove_commands.append("Time_signature_engraver")
 
-        readable_duration = cdd.utilities.duration_in_seconds_to_readable_duration(
+        readable_duration = cdd_utilities.duration_in_seconds_to_readable_duration(
             absolute_time_in_seconds
         )
         # it's redundant to print the first duration (as it's redundant to print
@@ -644,7 +645,7 @@ def notate_noise(chapter: cdd.chapters.Chapter):
     notation_file_path = chapter.get_notation_path(instrument)
     table = tuple(
         (
-            cdd.utilities.duration_in_seconds_to_readable_duration(absolute_time),
+            cdd_utilities.duration_in_seconds_to_readable_duration(absolute_time),
             chapter.NOISE.character,
         )
         for absolute_time in chapter.NOISE.absolute_time_tuple

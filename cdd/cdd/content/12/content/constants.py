@@ -29,4 +29,16 @@ MAXIMUM_BAR_SIZE = int(
     )(core_events.SimpleEvent(configurations.BEAT_SIZE)).duration,
 )
 
-REST_TIME_SIGNATURE = abjad.TimeSignature((configurations.REST_SIZE_COUNT, configurations.BEAT_SIZE.denominator))
+REST_TIME_SIGNATURE = abjad.TimeSignature(
+    (configurations.REST_SIZE_COUNT, configurations.BEAT_SIZE.denominator)
+)
+
+MAX_TEMPO = (
+    configurations.BASE_TEMPO.absolute_tempo_in_beat_per_minute
+    * configurations.MAX_TEMPO_FACTOR
+)
+
+MIN_TEMPO = (
+    configurations.BASE_TEMPO.absolute_tempo_in_beat_per_minute
+    * configurations.MIN_TEMPO_FACTOR
+)

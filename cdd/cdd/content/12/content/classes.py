@@ -359,6 +359,7 @@ class GroupCollection(object):
                         for event in (event0, event1)
                     ]
                 ),
+                event0.duration < fractions.Fraction(2, 1),
             ]
             return all(test_list)
 

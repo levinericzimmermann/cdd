@@ -17,7 +17,7 @@ class EventToVolumeControl(csound_converters.EventToSoundFile):
 0dbfs=1
 instr 1
     asig poscil 1, 200
-    istartAndEnd = p3 * 0.4
+    istartAndEnd = p3 * 0.45
     if (istartAndEnd >= 10) then
         istartAndEnd = 10
     endif
@@ -26,7 +26,6 @@ instr 1
     out asig * kenv
 endin
 """
-
     def __init__(self):
         def p4(note_like):
             playing_indicator_collection = note_like.playing_indicator_collection

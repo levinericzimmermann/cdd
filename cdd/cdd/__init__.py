@@ -1,3 +1,4 @@
+from mutwo import cdd_events  # to activate monkey-patch
 from mutwo import cdd_parameters
 cdd_parameters.CDDNotationIndicatorCollection
 
