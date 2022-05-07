@@ -199,6 +199,21 @@ class ClavichordPart(object):
         self.time_signature_tuple = tuple(time_signature_list)
         self.sequential_event = sequential_event
 
+        self.sequential_event = core_events.SequentialEvent(
+            [
+                music_events.NoteLike(pitch_tuple[-1], fractions.Fraction(1, 6))
+                for _ in range(
+                    int(self.sequential_event.duration / fractions.Fraction(1, 6))
+                )
+            ]
+        )
+
+        for index, note_like in enumerate(self.sequential_event):
+            if index % 3 == 0:
+                note_like.pitch_list = []
+            elif (index - 1) % 3 ==0:
+                note_like.pitch_list[0] -= music_parameters.JustIntonationPitch('3/2')
+
         time_signature_duration = sum(
             [
                 fractions.Fraction(time_signature.duration)

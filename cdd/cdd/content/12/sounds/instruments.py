@@ -9,7 +9,7 @@ from mutwo import isis_converters
 from mutwo import midi_converters
 from mutwo import music_converters
 
-import cdd
+from cdd import configurations
 
 
 class EventToVolumeControl(csound_converters.EventToSoundFile):
@@ -79,7 +79,7 @@ endin
         self._remove_orchestra()
 
 
-def main(chapter: cdd.chapters.Chapter):
+def main(chapter):
     def simple_event_to_pitch(simple_event):
         pitch_list = simple_event.pitch_list
         if pitch_list:
@@ -95,8 +95,8 @@ def main(chapter: cdd.chapters.Chapter):
                 simple_event_to_consonant_tuple=lambda simple_event: simple_event.lyric.consonant_tuple,
                 simple_event_to_pitch=simple_event_to_pitch,
             ),
-            "--cfg_synth etc/isis/isis-cfg-synth.cfg",
-            "--cfg_style etc/isis/isis-cfg-style.cfg",
+            f"--cfg_synth {configurations.PATH.ETC.ISIS}/isis-cfg-synth.cfg",
+            f"--cfg_style {configurations.PATH.ETC.ISIS}/isis-cfg-style.cfg",
             # "-sv EL",
             "-sv MS",
             "--seed 100",

@@ -138,7 +138,7 @@ class TempoPointGenerator(object):
     def __post_init__(self):
         self.direction_cycle = itertools.cycle(
             functools.reduce(
-                operator.add, [self.pattern_tuple[index] for index in (0, 1, 2, 0, 3)]
+                operator.add, [self.pattern_tuple[index] for index in (0, 1, 0, 2, 0, 3, 0)]
             )
         )
 

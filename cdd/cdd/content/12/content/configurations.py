@@ -78,15 +78,15 @@ TEMPO_REFERENCE = fractions.Fraction(2, 1)
 
 BASE_TEMPO = core_parameters.TempoPoint(45, reference=TEMPO_REFERENCE)
 
-MIN_TEMPO_FACTOR = 0.75
+MIN_TEMPO_FACTOR = 0.888
 
-MAX_TEMPO_FACTOR = 1.5
+MAX_TEMPO_FACTOR = 1.125
 
-TEMPO_POINT_COUNT = 4
+TEMPO_POINT_COUNT = 3
 
-TEMPO_CHANGE_LOOP_SIZE_RANGE = ranges.Range(3, 6)
+TEMPO_CHANGE_LOOP_SIZE_RANGE = ranges.Range(3, 5)
 
-TEMPO_CHANGE_BAR_COUNT_RANGE = ranges.Range(2, 5)
+TEMPO_CHANGE_BAR_COUNT_RANGE = ranges.Range(2, 4)
 
 TEMPO_CHANGE_LOOP_BAR_COUNT_RANGE = ranges.Range(
     TEMPO_CHANGE_BAR_COUNT_RANGE.start * TEMPO_CHANGE_LOOP_SIZE_RANGE.start,
@@ -166,7 +166,7 @@ LONG_TONE_DATA_TUPLE = (
     # (soprano, clarinet, are_locked)
     # NEW GROUP
     ((1, 1, "<>"), (1, 1, "<>"), True),
-    ((0.8, 0.7, "<>"), (0.65, 0.7, "<>"), False),
+    ((0.8, 0.7, "<>"), (0.5, 0.7, "<>"), False),
     # NEW GROUP
     ((1, 1, "<"), (1, 1, "<"), True),
     ((0.99, 0, ">"), (1, 0, "<"), True),
@@ -179,15 +179,15 @@ LONG_TONE_DATA_TUPLE += utilities12.reverse_long_tone_data_tuple(LONG_TONE_DATA_
 
 PATTERN_TUPLE = (
     # NEW GROUP
-    ((0, 1, 2, 3), 7),
-    ((1, 0, 1, 0, 2), 8),
+    (((0, 1, 2, 3), 1, 2, 3), 4),
+    ((1, 0, 1, 0, 2), 3),
     # NEW GROUP
-    ((3, 2, 1, 0), 4),
+    ((3, 2, 1, 0), 3),
     ((0, 1, 2), 3),
     (((1, 2), (0, 3), 1, 0), 2),
-    ((2, 2, 1, 3, 0), 5),
+    ((2, 2, 1, 3, 0), 3),
     # CENTER
-    (((0, 1, 2, 3), 0, 1, 1, (0, 1, 2, 3), 2, 3, 3), 4),
+    (((0, 1, 2, 3), 0, 1, 1, (0, 1, 2, 3), 2, 3, 3), 2),
 )
 PATTERN_TUPLE += utilities12.reverse_tuple(PATTERN_TUPLE)
 
@@ -228,4 +228,20 @@ REST_TIME_SIGNATURE_TUPLE = (
     abjad.TimeSignature((2, 2)),
     abjad.TimeSignature((7, 2)),
     abjad.TimeSignature((2, 2)),
+)
+
+
+METRONOME_ACTIVITY_LEVEL_ENVELOPE = core_events.Envelope(
+    [
+        [0, 10],
+        [0.1, 10],
+        [0.2, 10],
+        [0.3, 9],
+        [0.5, 8],
+        [0.66, 7],
+        [0.7, 8],
+        [0.8, 10],
+        [0.9, 10],
+        [1, 0],
+    ]
 )

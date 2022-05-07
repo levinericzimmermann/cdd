@@ -31,6 +31,10 @@ PATH.CDD.DATA.FADO = "fado"
 PATH.CDD.DATA.PESSOA = "pessoa"
 PATH.CDD.DATA.PESSOA.BOOK = "Livro_do_Desassossego.epub"
 
+PATH.ETC = "etc"
+PATH.ETC.CSOUND = "csound"
+PATH.ETC.ISIS = "isis"
+
 
 FORCE_TO_COMPUTE_FADO = False
 FORCE_TO_COMPUTE_PESSOA = True
