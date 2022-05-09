@@ -190,6 +190,13 @@ LONG_TONE_DATA_TUPLE[-3][1] = list(LONG_TONE_DATA_TUPLE[-3][1])
 LONG_TONE_DATA_TUPLE[-3][1][-1] = None
 LONG_TONE_DATA_TUPLE[-2] = ((1, 0, "<"), (1, 0, None), True)
 LONG_TONE_DATA_TUPLE[-1] = ((0.7, 0, ">"), (1, 0.2, ">"), True)
+
+# TRYING TO SUDDENLY ENTER SILENCE
+# LONG_TONE_DATA_TUPLE[2] = ((1, 1, "<"), (1, 1, "<"), True)
+# LONG_TONE_DATA_TUPLE[3] = ((0.7, 0, None), (0.7, 0, None), True)
+# LONG_TONE_DATA_TUPLE[4] = ((1, 1, "<"), (1, 0, "<"), True)
+# LONG_TONE_DATA_TUPLE[5] = ((0.8, 0, None), (0.8, 0, None), True)
+
 # LONG_TONE_DATA_TUPLE[5] = ((0.8, 0.1, ">"), (1, 0, "<>"), True)
 LONG_TONE_DATA_TUPLE = tuple(LONG_TONE_DATA_TUPLE)
 
@@ -197,12 +204,13 @@ LONG_TONE_DATA_TUPLE = tuple(LONG_TONE_DATA_TUPLE)
 PATTERN_TUPLE = (
     # NEW GROUP
     ((0, 1, 2, 3), 10),
-    ((0, 1, 2, 3), 8),
+    ((0, 1, 2, 3), 10),
     # NEW GROUP
     ((3, 2, 1, 0), 10),
-    ((0, 1, 2, 3), 7),
+    # ((0, 1, 2, 3), 7),
+    ((0, 1, 2, 3), 19),
     ((0, 1, 2, 3), 5),
-    ((0, 1, 2, 3), 8),
+    ((0, 1, 2, 3), 11),
     # CENTER
     ((0, 1, 2, 3), 11),
     # NEW GROUP
@@ -251,8 +259,8 @@ DENSITY_ENVELOPE_TUPLE = (
     [[0, 0.1], [0.9, 0.2]],
     [[0, 0.45], [0.3, 0.35], [0.8, 0.1], [1, 0]],
     # NEW GROUP
-    [[0, 0], [1, 0.2]],
-    [[0, 0.4], [0.8, 0.2], [1, 0.1]],
+    [[0, 0], [1, 0.23]],
+    [[0, 0.285], [0.8, 0.2], [1, 0.1]],
     [[0, 0], [1, 0.3]],
     [[0, 0.2], [1, 0.1]],
     # CENTER

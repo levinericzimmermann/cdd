@@ -9,10 +9,12 @@ import quicktions as fractions
 from mutwo import core_converters
 from mutwo import core_events
 from mutwo import core_parameters
+from mutwo import music_events
 from mutwo import music_parameters
 
 from . import classes
 from . import configurations
+from . import constants
 
 
 @dataclasses.dataclass
@@ -180,7 +182,7 @@ class ClavichordTimeBracketContainer(object):
             elif difference < 0:
                 raise ValueError(
                     "Found overlapping clavichord time brackets! "
-                    f"Number: {index}. TimeBracket: {clavichord_time_bracket}"
+                    f"Number: {index}. TimeBracket: {repr(clavichord_time_bracket)[:30]}"
                 )
             local_sequential_event = core_converters.TempoConverter(
                 clavichord_time_bracket.tempo_envelope
@@ -227,7 +229,6 @@ class ClavichordTimeBracketContainer(object):
 
 
 def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContainer):
-    pass
     # clavichord_time_bracket_container.remove(3)
     # clavichord_time_bracket_container.remove(1)
     # clavichord_time_bracket_container.remove(6)
@@ -238,6 +239,13 @@ def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContain
     # )
     # clavichord_time_bracket_container[1].sequential_event[1].duration = fractions.Fraction(2, 1)
     # clavichord_time_bracket_container[1].sequential_event[2].duration = fractions.Fraction(1, 1)
+
+    clavichord_time_bracket_container.remove(5)
+    clavichord_time_bracket_container.remove(3)
+    clavichord_time_bracket_container.remove(5)
+    clavichord_time_bracket_container.remove(4)
+    clavichord_time_bracket_container.remove(6)
+    clavichord_time_bracket_container.remove(5)
 
     clavichord_time_bracket_container[0].delay += fractions.Fraction(2, 1)
     # clavichord_time_bracket_container[2].delay += fractions.Fraction(4, 1)
@@ -269,21 +277,56 @@ def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContain
         6
     ].playing_indicator_collection.arpeggio.direction = "down"
 
-    # clavichord_time_bracket_container[4].delay += fractions.Fraction(1, 2)
-    clavichord_time_bracket_container[5].delay += fractions.Fraction(1, 2)
+    tremolo0_pitch_list = [
+        constants.CHORD_SEQUENTIAL_EVENT[group_index].pitch_list[
+            configurations.PITCH_ORDER.index("clavichord")
+        ]
+        for group_index in (4, 5)
+    ]
+    tremolo0_pitch_count_list = [11, 41]
+    tremolo_sequential_event_list = [
+        core_events.SequentialEvent([]),
+        core_events.SequentialEvent([]),
+    ]
+    for tremolo_sequential_event0, pitch, pitch_count in zip(
+        tremolo_sequential_event_list, tremolo0_pitch_list, tremolo0_pitch_count_list
+    ):
+        for _ in range(pitch_count):
+            tremolo_sequential_event0.append(
+                music_events.NoteLike(
+                    pitch,
+                    fractions.Fraction(1, 4),
+                )
+            )
     clavichord_time_bracket_container[
-        5
-    ].sequential_event = clavichord_time_bracket_container[5].sequential_event[:-1]
-    clavichord_time_bracket_container[5].sequential_event[-1].set_parameter(
-        "pitch_list",
-        lambda pitch_list: [
-            pitch_list[0] + music_parameters.JustIntonationPitch("3/2"),
-            pitch_list[0] - music_parameters.JustIntonationPitch("3/2"),
-            pitch_list[0] - music_parameters.JustIntonationPitch("2/1"),
-            pitch_list[0] - music_parameters.JustIntonationPitch("8/1"),
-            pitch_list[0],
-        ],
+        4
+    ].sequential_event = tremolo_sequential_event_list[0]
+    clavichord_time_bracket_container[4].delay += fractions.Fraction(17, 2)
+
+    # clavichord_time_bracket_container.remove(3)
+    clavichord_time_bracket_container.remove(2)
+    clavichord_time_bracket_container.remove(5)
+    clavichord_time_bracket_container.remove(4)
+
+    clavichord_time_bracket_container.append_clavichord_time_bracket(
+        2, fractions.Fraction(105, 2), tremolo_sequential_event_list[1], False
     )
-    clavichord_time_bracket_container[5].sequential_event[
-        -1
-    ].playing_indicator_collection.arpeggio.direction = "up"
+
+    # clavichord_time_bracket_container[4].delay += fractions.Fraction(1, 2)
+    # clavichord_time_bracket_container[5].delay += fractions.Fraction(1, 2)
+    # clavichord_time_bracket_container[
+    #     5
+    # ].sequential_event = clavichord_time_bracket_container[5].sequential_event[:-1]
+    # clavichord_time_bracket_container[5].sequential_event[-1].set_parameter(
+    #     "pitch_list",
+    #     lambda pitch_list: [
+    #         pitch_list[0] + music_parameters.JustIntonationPitch("3/2"),
+    #         pitch_list[0] - music_parameters.JustIntonationPitch("3/2"),
+    #         pitch_list[0] - music_parameters.JustIntonationPitch("2/1"),
+    #         pitch_list[0] - music_parameters.JustIntonationPitch("8/1"),
+    #         pitch_list[0],
+    #     ],
+    # )
+    # clavichord_time_bracket_container[5].sequential_event[
+    #     -1
+    # ].playing_indicator_collection.arpeggio.direction = "up"

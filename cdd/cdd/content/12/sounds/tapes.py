@@ -34,7 +34,7 @@ def render_midi_tones(chapter):
         for instrument_name, pitch in zip(chapter.pitch_order, chord.pitch_list):
             for octave in (-3, -2, -1, 0, 1, 2, 3):
                 note_like = music_events.NoteLike(
-                    pitch.register(octave, mutate=False), 120
+                    pitch.register(octave, mutate=False), 180
                 )
                 path = f"{configurations.PATH.BUILDS.MIDI.C12}/{instrument_name}_{chord_index}_{octave}.mid"
                 event_to_midi_file.convert(note_like, path)
