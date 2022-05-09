@@ -54,7 +54,7 @@ fado_part_mmml_tuple = (
     r"1:0`16 7+3-`8 3+:0`8 7+`16 7+3--`8 3+`16",
     # sonho
     # r"7+3--:0`8 3+`4",  # original, but I prefer to change it
-    r"7+3--:0`16*p<articulation.name='.'> r`16 3+`16*p r`3/16",
+    r"7+3--:0`16*p<articulation.name='.';note_head.style='cross'> r`16 3+`16*p r`3/16",
     # e faltam a esse
     # r"3-:0`16 3-`8 3+`8 7+3--`16 7+`8",  # original, but I prefer to change it
     # r"3-:-1`16*p<articulation.name='.'> r`16 3-*p r 3- r 3- r`3/16 3-`16 r 3- r",
@@ -199,6 +199,7 @@ fado_part_sequential_event_tuple[5][1].pitch_list = "9/4"
 #             pitch + music_parameters.JustIntonationPitch("2/1") for pitch in pitch_list
 #         ],
 #     )
+
 
 # Remove articulation from rests
 for sequential_event in fado_part_sequential_event_tuple:

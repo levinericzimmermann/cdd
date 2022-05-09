@@ -3,11 +3,12 @@ import dataclasses
 import abjad
 import quicktions as fractions
 
+from mutwo import cdd_utilities
 from mutwo import core_events
 from mutwo import music_events
 from mutwo import music_parameters
 
-from cdd import utilities
+from . import SOPRANO
 
 
 @dataclasses.dataclass(frozen=True)
@@ -27,13 +28,15 @@ class LongNote(object):
         sequential_event = self.sequential_event.copy()
         text_content = self.get_text_content(
             *[
-                utilities.duration_in_seconds_to_readable_duration(time)
+                cdd_utilities.duration_in_seconds_to_readable_duration(time)
                 for time in (self.start, self.end)
             ]
         )
         sequential_event[0].notation_indicator_collection.markup.content = abjad.Markup(
             # r"\typewriter { \smaller { " f"{text_content}" r"} }"
-            r"\typewriter { \normalsize { " f"{text_content}" r"} }"
+            r"\typewriter { \normalsize { "
+            f"{text_content}"
+            r"} }"
         )
         sequential_event[0].notation_indicator_collection.markup.direction = "^"
         return sequential_event
@@ -98,9 +101,10 @@ glissando_note_tuple = (
 )
 
 
-instruction_text_unisono = r"""
+instruction_text_unisono = fr"""
 start at given time; play with singer.
 dynamics should be equally balanced.
+tempo: {SOPRANO.tempo_range.start} to {SOPRANO.tempo_range.end} bpm (= 1/4) [adjust to singer].
 """
 
 # Then: unisono event with soprano (event is defined in content/__init__.py)
@@ -110,6 +114,7 @@ instruction_text_slap = r"""
 repeat pattern up to 4 times.
 use slap tongue.
 use different tempi when repeating the pattern.
+parenthesized note is optional; can or can not be played.
 """
 
 
@@ -120,8 +125,15 @@ slap_sequential_event = core_events.SequentialEvent(
         for pitch in ("3/4", "2/3")
     ]
 )
+slap_note_head = "cross"
 for note_like in slap_sequential_event:
-    note_like.playing_indicator_collection
+    note_like.notation_indicator_collection.note_head.style = slap_note_head
+slap_optional_note = music_events.NoteLike("f", fractions.Fraction(1, 8))
+slap_optional_note.playing_indicator_collection.optional = True
+# slap_optional_note.notation_indicator_collection.note_head.style = slap_note_head
+slap_sequential_event[1].grace_note_sequential_event = core_events.SequentialEvent(
+    [slap_optional_note]
+)
 
 slap_long_note = TimeSpanLongNote(slap_sequential_event, (6 * 60) + 10, 45)
 
