@@ -15,3 +15,6 @@ class CDDPlayingIndicatorCollection(music_parameters.PlayingIndicatorCollection)
     irregular_glissando: music_parameters.abc.ExplicitPlayingIndicator = (
         dataclasses.field(default_factory=music_parameters.abc.ExplicitPlayingIndicator)
     )
+    optional: music_parameters.abc.ExplicitPlayingIndicator = (
+        dataclasses.field(default_factory=music_parameters.abc.ExplicitPlayingIndicator)
+    )

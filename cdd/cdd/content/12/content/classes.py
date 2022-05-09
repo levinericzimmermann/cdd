@@ -199,20 +199,20 @@ class ClavichordPart(object):
         self.time_signature_tuple = tuple(time_signature_list)
         self.sequential_event = sequential_event
 
-        self.sequential_event = core_events.SequentialEvent(
-            [
-                music_events.NoteLike(pitch_tuple[-1], fractions.Fraction(1, 6))
-                for _ in range(
-                    int(self.sequential_event.duration / fractions.Fraction(1, 6))
-                )
-            ]
-        )
+        # self.sequential_event = core_events.SequentialEvent(
+        #     [
+        #         music_events.NoteLike(pitch_tuple[-1], fractions.Fraction(1, 6))
+        #         for _ in range(
+        #             int(self.sequential_event.duration / fractions.Fraction(1, 6))
+        #         )
+        #     ]
+        # )
 
-        for index, note_like in enumerate(self.sequential_event):
-            if index % 3 == 0:
-                note_like.pitch_list = []
-            elif (index - 1) % 3 ==0:
-                note_like.pitch_list[0] -= music_parameters.JustIntonationPitch('3/2')
+        # for index, note_like in enumerate(self.sequential_event):
+        #     if index % 3 == 0:
+        #         note_like.pitch_list = []
+        #     elif (index - 1) % 3 ==0:
+        #         note_like.pitch_list[0] -= music_parameters.JustIntonationPitch('3/2')
 
         time_signature_duration = sum(
             [
@@ -436,25 +436,64 @@ class GroupCollection(object):
             else [],
         )
 
+        pitch_list_tuple = tuple(
+            pitch_list
+            for pitch_list in clarinet_sequential_event.get_parameter("pitch_list")
+            if pitch_list
+        )
+        pitch_list_tuple[6][0].register(-2)
+
         # for event_index in (6,):
         #     clarinet_sequential_event[event_index].pitch_list[0].register(0)
 
         self._add_stop_hairpin(clarinet_sequential_event)
 
     @functools.cached_property
-    def to_simultaneous_event(self) -> core_events.SimultaneousEvent:
-        tag_to_sequential_event = get_tag_to_sequential_event()
-
+    def to_simultaneous_event_tuple(self) -> tuple[core_events.SimultaneousEvent, ...]:
+        simultaneous_event_list = []
         last_index = len(self.group_tuple) - 1
         rest_duration_iterator = iter(self.rest_duration_tuple)
         for index, group in enumerate(self.group_tuple):
-            for tagged_sequential_event in group.to_simultaneous_event:
+            simultaneous_event_list.append(group.to_simultaneous_event)
+            if index != last_index:
+                simultaneous_event = core_events.SimultaneousEvent(
+                    get_tag_to_sequential_event().values()
+                )
+                rest_duration = next(rest_duration_iterator)
+                for sequential_event in simultaneous_event:
+                    sequential_event.append(music_events.NoteLike([], rest_duration))
+                simultaneous_event_list.append(simultaneous_event)
+        return tuple(simultaneous_event_list)
+
+    @functools.cached_property
+    def to_group_absolute_time_tuple(self) -> tuple[fractions.Fraction, ...]:
+        return tuple(
+            core_utilities.accumulate_from_zero(
+                [
+                    simultaneous_event.duration
+                    for simultaneous_event in self.to_simultaneous_event_tuple
+                ]
+            )
+        )
+
+    @functools.cached_property
+    def to_sequential_event_grid(self) -> core_events.SequentialEvent:
+        grid_size = fractions.Fraction(1, 16)
+        return core_events.SequentialEvent(
+            [
+                core_events.SimpleEvent(grid_size)
+                for _ in range(int(self.to_simultaneous_event.duration / grid_size))
+            ]
+        )
+
+    @functools.cached_property
+    def to_simultaneous_event(self) -> core_events.SimultaneousEvent:
+        tag_to_sequential_event = get_tag_to_sequential_event()
+
+        for simultaneous_event in self.to_simultaneous_event_tuple:
+            for tagged_sequential_event in simultaneous_event:
                 sequential_event = tag_to_sequential_event[tagged_sequential_event.tag]
                 sequential_event.extend(tagged_sequential_event)
-            if index != last_index:
-                rest_duration = next(rest_duration_iterator)
-                for sequential_event in tag_to_sequential_event.values():
-                    sequential_event.append(music_events.NoteLike([], rest_duration))
 
         tag_to_process = {
             tag: getattr(self, f"process_{tag}")

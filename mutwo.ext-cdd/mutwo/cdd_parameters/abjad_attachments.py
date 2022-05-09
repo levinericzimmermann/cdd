@@ -80,6 +80,31 @@ class CentDeviation(
         return leaf
 
 
+class DurationLine(
+    cdd_parameters.DurationLine, abjad_parameters.abc.BangFirstAttachment
+):
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                (
+                    fr"\once \override DurationLine.dash-period = #'{self.dash_period} "
+                    fr"\once \override DurationLine.thickness = #'{self.thickness} "
+                    fr"\once \override DurationLine.bound-details.right.end-style = #'{self.end_style} "
+                    fr"\override DurationLine.bound-details.hook-direction = #{self.hook_direction} "
+                )
+            ),
+            leaf,
+        )
+        if self.style != "line":
+            abjad.attach(
+                abjad.LilyPondLiteral(
+                    (fr"\once \override DurationLine.style = #'{self.style} ")
+                ),
+                leaf,
+            )
+        return leaf
+
+
 class FancyGlissando(
     cdd_parameters.FancyGlissando, abjad_parameters.abc.BangFirstAttachment
 ):
@@ -95,6 +120,22 @@ class FancyGlissando(
         fancy_glissando = FancyGlissando._command_to_lilypond_string(self.command)
         abjad.attach(abjad.LilyPondLiteral(fancy_glissando, format_slot="before"), leaf)
         abjad.attach(abjad.Glissando(), leaf)
+        return leaf
+
+
+class Optional(
+    music_parameters.abc.ExplicitPlayingIndicator,
+    abjad_parameters.abc.BangFirstAttachment,
+):
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        if hasattr(leaf, "note_head"):
+            note_head_list = [leaf.note_head]
+        elif hasattr(leaf, "note_heads"):
+            note_head_list = leaf.note_heads
+        else:
+            note_head_list = []
+        for note_head in note_head_list:
+            note_head.is_parenthesized = True
         return leaf
 
 
@@ -198,5 +239,13 @@ class NoteHeadHintList(
 # override mutwo default value
 abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE = (
     abjad_converters.configurations.DEFAULT_ABJAD_ATTACHMENT_CLASS_TUPLE
-    + (CentDeviation, FancyGlissando, IrregularGlissando, NoteHead, NoteHeadHintList)
+    + (
+        CentDeviation,
+        FancyGlissando,
+        IrregularGlissando,
+        NoteHead,
+        NoteHeadHintList,
+        Optional,
+        DurationLine,
+    )
 )

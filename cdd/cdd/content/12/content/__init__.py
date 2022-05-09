@@ -7,11 +7,14 @@ from mutwo import music_parameters
 
 import cdd
 
+from . import clarinet
+from . import clavichord
 from . import constants
 from . import configurations
 from . import classes
 from . import tapes
 from . import tempos
+from . import soprano
 
 StartTime, EndTime = float, float
 DoesNextEventFollowsImmediately = bool
@@ -22,6 +25,7 @@ SustainingInstrumentData = tuple[
     core_events.SequentialEvent,  # environment
     DoesNextEventFollowsImmediately,
 ]
+ClavichordTimeBracket = tuple[StartTime, EndTime, core_events.SequentialEvent]
 
 
 class Chapter(cdd.chapters.Chapter):
@@ -32,11 +36,12 @@ repeat song ad libitum.
 
     instruction_text_sustaining_instrument = rf"""{instruction_text}
 start \& end tones at given times.
+if necessary: discreetly interrupt tone to take breath.
 arrow = next tone follows immediately.
 """
 
     instrument_name_to_instruction_text = {
-        "soprano": rf"""{instruction_text_sustaining_instrument} only sing vowels (pass parenthetical letters).
+        "soprano": rf"""{instruction_text_sustaining_instrument} only sing vowels (pass parenthesized letters).
 if a note has multiple vowels: interpolate between them over the course of the given tone.
 """,
         "clarinet": instruction_text_sustaining_instrument,
@@ -45,6 +50,9 @@ if a note has multiple vowels: interpolate between them over the course of the g
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.chord_sequential_event = constants.CHORD_SEQUENTIAL_EVENT
+        self.pitch_order = configurations.PITCH_ORDER
 
         self.group_collection = self.get_group_collection()
         self.simultaneous_event = self.group_collection.to_simultaneous_event
@@ -60,6 +68,23 @@ if a note has multiple vowels: interpolate between them over the course of the g
         )
 
         self.sustaining_instrument_dict = self.make_sustaining_instrument_data()
+
+        clarinet.post_process(self.sustaining_instrument_dict[cdd.constants.CLARINET])
+        soprano.post_process(self.sustaining_instrument_dict[cdd.constants.SOPRANO])
+
+        self.clavichord_time_bracket_container = (
+            clavichord.ClavichordTimeBracketContainer.from_sequential_event_and_group(
+                tuple(
+                    self.simultaneous_event.get_event_iterator_by(
+                        tag=cdd.constants.CLAVICHORD
+                    )
+                )[0],
+                self.group_collection,
+                self.tempo_envelope,
+            )
+        )
+
+        clavichord.post_process(self.clavichord_time_bracket_container)
 
     @staticmethod
     def _maxima_and_percentage_to_duration(maxima, percentage):
@@ -159,7 +184,7 @@ if a note has multiple vowels: interpolate between them over the course of the g
 
     def get_group_collection(self) -> classes.GroupCollection:
         chord_count = len(constants.CHORD_SEQUENTIAL_EVENT)
-        assert chord_count == 13
+        # assert chord_count == 13
         for sequence in (
             constants.CHORD_SEQUENTIAL_EVENT.get_parameter("pitch_list"),
             configurations.LONG_TONE_DATA_TUPLE,
@@ -235,10 +260,10 @@ if a note has multiple vowels: interpolate between them over the course of the g
                 )
             )[0]
             sequential_event_with_correct_tempo = tempo_converter(
-                sequential_event.set_parameter(
-                    "duration", lambda duration: duration * 4, mutate=False
-                )
+                sequential_event.copy()
             )
+
+            sequential_event_with_correct_tempo.duration *= 4
 
             content_duration = fractions.Fraction(4, 1)
             environment_duration = content_duration
@@ -310,8 +335,8 @@ if a note has multiple vowels: interpolate between them over the course of the g
                 event_data0.append(does_next_event_follows_immediately)
 
             event_data_list[-1].append(False)
-            event_data_tuple = tuple(
-                tuple(event_data) for event_data in event_data_list
+            event_data_tuple = list(
+                list(event_data) for event_data in event_data_list
             )
 
             instrument_name_to_data.update(

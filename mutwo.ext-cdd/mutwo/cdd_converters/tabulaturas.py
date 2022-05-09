@@ -36,7 +36,7 @@ class PitchToTabulaturaPitch(core_converters.abc.Converter):
             ]
         except KeyError:
             warnings.warn(
-                f"Couldn't find any tabulatura pitch for {pitch_to_convert}!",
+                f"Couldn't find any tabulatura pitch for {repr(pitch_to_convert)}!",
                 RuntimeWarning,
             )
             return None

@@ -21,9 +21,19 @@ class NoteHeadHintList(music_parameters.abc.ImplicitPlayingIndicator):
     hint_list: typing.Optional[list[str]] = None
 
 
+@dataclasses.dataclass()
+class DurationLine(music_parameters.abc.ImplicitPlayingIndicator):
+    style: str = "line"
+    thickness: float = 3
+    dash_period: int = 2
+    end_style: str = "none"
+    hook_direction: str = "DOWN"
+
+
 @dataclasses.dataclass(frozen=False)
 class CDDNotationIndicatorCollection(music_parameters.NotationIndicatorCollection):
     cent_deviation: CentDeviation = dataclasses.field(default_factory=CentDeviation)
+    duration_line: DurationLine = dataclasses.field(default_factory=DurationLine)
     note_head: NoteHead = dataclasses.field(default_factory=NoteHead)
     note_head_hint_list: NoteHeadHintList = dataclasses.field(
         default_factory=NoteHeadHintList

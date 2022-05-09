@@ -113,13 +113,14 @@ class AddTimeBracketMarks(abjad_converters.ProcessAbjadContainerRoutine):
         time: core_constants.DurationType,
         format_slot: str,
     ):
-        formated_time = cdd_utilities.duration_in_seconds_to_readable_duration(time)
-        time_bracket_mark = (
-            r"\mark \markup { \typewriter " r" { \small { " f"{formated_time} " r"} } }"
-        )
-        AddTimeBracketMarks._attach_time_bracket_mark(
-            leaf_to_attach_to, time_bracket_mark, format_slot
-        )
+        if time is not None:
+            formated_time = cdd_utilities.duration_in_seconds_to_readable_duration(time)
+            time_bracket_mark = (
+                r"\mark \markup { \typewriter " r" { \small { " f"{formated_time} " r"} } }"
+            )
+            AddTimeBracketMarks._attach_time_bracket_mark(
+                leaf_to_attach_to, time_bracket_mark, format_slot
+            )
 
     @staticmethod
     def _add_time_bracket_mark_for_time_range(
