@@ -1,5 +1,6 @@
 from __future__ import annotations
 import bisect
+import copy
 import dataclasses
 
 import abjad
@@ -9,8 +10,11 @@ import quicktions as fractions
 from mutwo import core_converters
 from mutwo import core_events
 from mutwo import core_parameters
+from mutwo import core_utilities
 from mutwo import music_events
 from mutwo import music_parameters
+
+from cdd import constants as cdd_constants
 
 from . import classes
 from . import configurations
@@ -31,6 +35,9 @@ class ClavichordTimeBracket(object):
     group_tempo_envelope: expenvelope.Envelope
     group_sequential_event_grid: core_events.SequentialEvent
     group_sequential_event_grid_with_applied_tempo_envelope: core_events.SequentialEvent
+    group_metronome_sequential_event: core_events.SequentialEvent
+    group_time_signature_sequence: tuple
+    group_time_signature_absolute_time_sequence: tuple
 
     def __post_init__(self):
         is_rest_list = [
@@ -44,13 +51,64 @@ class ClavichordTimeBracket(object):
 
     @property
     def time_signature_sequence(self) -> tuple[abjad.TimeSignature, ...]:
-        duration = fractions.Fraction(self.sequential_event.duration)
-        time_signature = abjad.TimeSignature((duration.numerator, duration.denominator))
-        return (time_signature,)
+        if self.notate_metronome:
+            time_signature_sequence = self.group_time_signature_sequence[
+                self.start_time_signature_index :
+            ]
+        else:
+            duration = fractions.Fraction(self.sequential_event.duration)
+            time_signature_sequence = (
+                abjad.TimeSignature((duration.numerator, duration.denominator)),
+            )
+        return time_signature_sequence
+
+    @property
+    def base_absolute_time_in_beats(self) -> fractions.Fraction:
+        return self.group_absolute_time_tuple[self.group_index] + self.delay
+
+    @property
+    def start_time_signature_index(self) -> int:
+        base_absolute_time_in_beats = self.base_absolute_time_in_beats
+        index = (
+            bisect.bisect_right(
+                self.group_time_signature_absolute_time_sequence,
+                base_absolute_time_in_beats,
+            )
+            - 1
+        )
+        if (
+            self.group_time_signature_absolute_time_sequence[index]
+            - base_absolute_time_in_beats
+        ) == 0:
+            index -= 1
+        return index
+
+    @property
+    def end_time_signature_index(self) -> int:
+        end_time = self.base_absolute_time_in_beats + self.sequential_event.duration
+        return bisect.bisect_right(
+            self.group_time_signature_absolute_time_sequence,
+            end_time,
+        )
 
     @property
     def absolute_time_in_beats(self) -> fractions.Fraction:
-        return self.group_absolute_time_tuple[self.group_index] + self.delay
+        if self.notate_metronome:
+            return self.group_time_signature_absolute_time_sequence[
+                self.start_time_signature_index
+            ]
+        else:
+            return self.base_absolute_time_in_beats
+
+    @property
+    def absolute_end_time_in_beats(self) -> fractions.Fraction:
+        return self.group_time_signature_absolute_time_sequence[
+            self.end_time_signature_index
+        ]
+
+    @property
+    def absolute_duration(self) -> fractions.Fraction:
+        return self.absolute_end_time_in_beats - self.absolute_time_in_beats
 
     @property
     def start_time(self) -> float:
@@ -65,7 +123,27 @@ class ClavichordTimeBracket(object):
     @property
     def tempo_envelope(self) -> expenvelope.Envelope:
         if self.notate_metronome:
-            point_list = []
+            envelope_hint = self.group_tempo_envelope.split_at(
+                self.absolute_time_in_beats
+            )[1].split_at(self.absolute_end_time_in_beats)[0]
+            extrema_point_time_list = [0]
+            # extrema_point_time_list = envelope_hint.local_extrema()
+            # duration = float(self.absolute_duration)
+            # if 0 not in extrema_point_time_list:
+            #     extrema_point_time_list.append(0)
+            # if duration not in extrema_point_time_list:
+            #     extrema_point_time_list.append(duration)
+            # extrema_point_time_list = sorted(extrema_point_time_list)
+            point_list = [
+                [
+                    time,
+                    core_parameters.TempoPoint(
+                        envelope_hint.value_at(time) / configurations.TEMPO_REFERENCE,
+                        reference=configurations.TEMPO_REFERENCE,
+                    ),
+                ]
+                for time in extrema_point_time_list
+            ]
         else:
             tempo = self.group_tempo_envelope.value_at(self.absolute_time_in_beats)
             point_list = [
@@ -77,7 +155,30 @@ class ClavichordTimeBracket(object):
                     ),
                 ]
             ]
-        return expenvelope.Envelope.from_points(*point_list)
+        envelope = expenvelope.Envelope.from_points(*point_list)
+        return envelope
+
+    @property
+    def metronome_sequential_event(self) -> core_events.SequentialEvent:
+        start = self.absolute_time_in_beats
+        end = start + self.sequential_event.duration
+        return self.group_metronome_sequential_event.cut_out(start, end, mutate=False)
+
+    def get_sequential_event(self) -> core_events.SequentialEvent:
+        if self.notate_metronome:
+            new_sequential_event = self.sequential_event.copy()
+            difference = self.base_absolute_time_in_beats - self.absolute_time_in_beats
+            if difference:
+                new_sequential_event.insert(0, music_events.NoteLike([], difference))
+            # expected_duration = (
+            #     self.absolute_end_time_in_beats - self.absolute_time_in_beats
+            # )
+            # difference = expected_duration - new_sequential_event.duration
+            # if difference:
+            #     new_sequential_event.append(music_events.NoteLike([], difference))
+            return new_sequential_event
+        else:
+            return self.sequential_event
 
 
 @dataclasses.dataclass
@@ -88,6 +189,8 @@ class ClavichordTimeBracketContainer(object):
     group_tempo_envelope: expenvelope.Envelope
     group_sequential_event_grid: core_events.SequentialEvent
     group_sequential_event_grid_with_applied_tempo_envelope: core_events.SequentialEvent
+    metronome_sequential_event: core_events.SequentialEvent
+    group_time_signature_sequence: tuple
 
     clavichord_time_bracket_list: list[ClavichordTimeBracket] = tuple([])
 
@@ -113,6 +216,8 @@ class ClavichordTimeBracketContainer(object):
         sequential_event: core_events.SequentialEvent,
         group_collection: classes.GroupCollection,
         group_tempo_envelope: expenvelope.Envelope,
+        metronome_sequential_event: core_events.SequentialEvent,
+        group_time_signature_sequence: tuple,
     ) -> ClavichordTimeBracketContainer:
         group_sequential_event_grid = group_collection.to_sequential_event_grid
         group_sequential_event_grid_with_applied_tempo_envelope = (
@@ -128,6 +233,8 @@ class ClavichordTimeBracketContainer(object):
             group_tempo_envelope,
             group_sequential_event_grid,
             group_sequential_event_grid_with_applied_tempo_envelope,
+            metronome_sequential_event,
+            group_time_signature_sequence,
         )
 
         # tie rests together
@@ -197,6 +304,14 @@ class ClavichordTimeBracketContainer(object):
         )
 
     def _add_clavichord_time_bracket(self, *args, **kwargs):
+        group_time_signature_absolute_time_sequence = tuple(
+            core_utilities.accumulate_from_zero(
+                [
+                    fractions.Fraction(time_signature.duration)
+                    for time_signature in self.group_time_signature_sequence
+                ]
+            )
+        )
         self.clavichord_time_bracket_list.append(
             ClavichordTimeBracket(
                 *args,
@@ -205,6 +320,9 @@ class ClavichordTimeBracketContainer(object):
                 group_tempo_envelope=self._group_tempo_envelope_for_clavichord_time_bracket,
                 group_sequential_event_grid=self.group_sequential_event_grid,
                 group_sequential_event_grid_with_applied_tempo_envelope=self.group_sequential_event_grid_with_applied_tempo_envelope,
+                group_metronome_sequential_event=self.metronome_sequential_event.copy(),
+                group_time_signature_sequence=self.group_time_signature_sequence,
+                group_time_signature_absolute_time_sequence=group_time_signature_absolute_time_sequence,
                 **kwargs,
             )
         )
@@ -228,62 +346,44 @@ class ClavichordTimeBracketContainer(object):
         return self.clavichord_time_bracket_list[index]
 
 
-def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContainer):
-    # clavichord_time_bracket_container.remove(3)
-    # clavichord_time_bracket_container.remove(1)
-    # clavichord_time_bracket_container.remove(6)
+def _split_time_bracket(
+    clavichord_time_bracket_container: ClavichordTimeBracketContainer,
+    bracket_to_split_index: int,
+):
+    time_bracket = clavichord_time_bracket_container[bracket_to_split_index]
+    time_bracket_data_list = []
 
-    # clavichord_time_bracket_container[1].sequential_event[2].pitch_list[0].register(-1)
-    # clavichord_time_bracket_container[1].sequential_event.set_parameter(
-    #     "duration", fractions.Fraction(3, 2)
-    # )
-    # clavichord_time_bracket_container[1].sequential_event[1].duration = fractions.Fraction(2, 1)
-    # clavichord_time_bracket_container[1].sequential_event[2].duration = fractions.Fraction(1, 1)
+    added_delay = 0
 
-    clavichord_time_bracket_container.remove(5)
-    clavichord_time_bracket_container.remove(3)
-    clavichord_time_bracket_container.remove(5)
-    clavichord_time_bracket_container.remove(4)
-    clavichord_time_bracket_container.remove(6)
-    clavichord_time_bracket_container.remove(5)
+    for note_like in time_bracket.sequential_event:
+        new_sequential_event = core_events.SequentialEvent([copy.deepcopy(note_like)])
+        # new_sequential_event[0].duration = fractions.Fraction(1, 1)
+        new_delay = time_bracket.delay + added_delay
+        added_delay += note_like.duration
+        time_bracket_data_list.append(
+            [
+                time_bracket.group_index,
+                new_delay,
+                new_sequential_event,
+                time_bracket.notate_metronome,
+            ]
+        )
 
-    clavichord_time_bracket_container[0].delay += fractions.Fraction(2, 1)
-    # clavichord_time_bracket_container[2].delay += fractions.Fraction(4, 1)
-    clavichord_time_bracket_container[2].delay += fractions.Fraction(8, 4)
-    clavichord_time_bracket_container[2].sequential_event[
-        0
-    ].duration -= fractions.Fraction(1, 4)
-    clavichord_time_bracket_container[
-        2
-        # ].sequential_event = clavichord_time_bracket_container[2].sequential_event[2:]
-    ].sequential_event = clavichord_time_bracket_container[2].sequential_event[1:]
+    clavichord_time_bracket_container.remove(bracket_to_split_index)
 
-    clavichord_time_bracket_container[2].sequential_event[4].set_parameter(
-        "pitch_list",
-        lambda pitch_list: [
-            pitch_list[0] + music_parameters.JustIntonationPitch("3/2"),
-            pitch_list[0],
-            pitch_list[0] + music_parameters.JustIntonationPitch("2/1"),
-            pitch_list[0] + music_parameters.JustIntonationPitch("4/1"),
-        ],
+    clavichord_time_bracket_container.extend_clavichord_time_bracket(
+        time_bracket_data_list
     )
-    clavichord_time_bracket_container[2].sequential_event[
-        4
-    ].playing_indicator_collection.arpeggio.direction = "up"
-    clavichord_time_bracket_container[2].sequential_event[6].pitch_list = (
-        clavichord_time_bracket_container[2].sequential_event[4].pitch_list
-    )
-    clavichord_time_bracket_container[2].sequential_event[
-        6
-    ].playing_indicator_collection.arpeggio.direction = "down"
 
+
+def _add_repetitions(clavichord_time_bracket_container: ClavichordTimeBracketContainer):
     tremolo0_pitch_list = [
         constants.CHORD_SEQUENTIAL_EVENT[group_index].pitch_list[
             configurations.PITCH_ORDER.index("clavichord")
         ]
         for group_index in (4, 5)
     ]
-    tremolo0_pitch_count_list = [11, 41]
+    tremolo0_pitch_count_list = [8, 40]
     tremolo_sequential_event_list = [
         core_events.SequentialEvent([]),
         core_events.SequentialEvent([]),
@@ -291,10 +391,11 @@ def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContain
     for tremolo_sequential_event0, pitch, pitch_count in zip(
         tremolo_sequential_event_list, tremolo0_pitch_list, tremolo0_pitch_count_list
     ):
+        tremolo_sequential_event0.repetition_count = pitch_count
         for _ in range(pitch_count):
             tremolo_sequential_event0.append(
                 music_events.NoteLike(
-                    pitch,
+                    cdd_constants.CLAVICHORD_AMBITUS.get_pitch_variant_tuple(pitch)[-1],
                     fractions.Fraction(1, 4),
                 )
             )
@@ -303,30 +404,95 @@ def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContain
     ].sequential_event = tremolo_sequential_event_list[0]
     clavichord_time_bracket_container[4].delay += fractions.Fraction(17, 2)
 
-    # clavichord_time_bracket_container.remove(3)
     clavichord_time_bracket_container.remove(2)
     clavichord_time_bracket_container.remove(5)
     clavichord_time_bracket_container.remove(4)
 
     clavichord_time_bracket_container.append_clavichord_time_bracket(
-        2, fractions.Fraction(105, 2), tremolo_sequential_event_list[1], False
+        2, fractions.Fraction(108, 2), tremolo_sequential_event_list[1], False
     )
 
-    # clavichord_time_bracket_container[4].delay += fractions.Fraction(1, 2)
-    # clavichord_time_bracket_container[5].delay += fractions.Fraction(1, 2)
-    # clavichord_time_bracket_container[
-    #     5
-    # ].sequential_event = clavichord_time_bracket_container[5].sequential_event[:-1]
-    # clavichord_time_bracket_container[5].sequential_event[-1].set_parameter(
-    #     "pitch_list",
-    #     lambda pitch_list: [
-    #         pitch_list[0] + music_parameters.JustIntonationPitch("3/2"),
-    #         pitch_list[0] - music_parameters.JustIntonationPitch("3/2"),
-    #         pitch_list[0] - music_parameters.JustIntonationPitch("2/1"),
-    #         pitch_list[0] - music_parameters.JustIntonationPitch("8/1"),
-    #         pitch_list[0],
-    #     ],
-    # )
-    # clavichord_time_bracket_container[5].sequential_event[
-    #     -1
-    # ].playing_indicator_collection.arpeggio.direction = "up"
+
+def _add_octave_chord(
+    clavichord_time_bracket_container: ClavichordTimeBracketContainer,
+):
+    sequential_event = core_events.SequentialEvent([])
+    note_like = music_events.NoteLike([], fractions.Fraction(1, 1))
+    base_pitch = constants.CHORD_SEQUENTIAL_EVENT[3].pitch_list[
+        configurations.PITCH_ORDER.index("clavichord")
+    ]
+    note_like.pitch_list = [
+        # base_pitch.register(-2, mutate=False),
+        # base_pitch.register(-1, mutate=False).add(
+        #     music_parameters.JustIntonationPitch("4/3")
+        # ),
+        base_pitch.register(-1, mutate=False),
+        base_pitch.register(-1, mutate=False).add(
+            music_parameters.JustIntonationPitch("3/2")
+        ),
+        base_pitch,
+        base_pitch.register(1, mutate=False),
+    ]
+    # note_like.playing_indicator_collection.arpeggio.direction = "up"
+    for _ in range(1):
+        sequential_event.append(note_like)
+    clavichord_time_bracket_container.append_clavichord_time_bracket(
+        2, fractions.Fraction(13, 2), sequential_event, False
+    )
+
+
+def _adjust_metronome_part(
+    clavichord_time_bracket_container: ClavichordTimeBracketContainer,
+):
+    clavichord_time_bracket = clavichord_time_bracket_container[10]
+    clavichord_time_bracket.notate_metronome = True
+    sequential_event = clavichord_time_bracket.sequential_event
+
+    # Increase rest at beginning, easier to start with metronome
+    sequential_event[0].pitch_list = []
+    sequential_event[0].duration += fractions.Fraction(1, 2)
+    sequential_event[1].duration -= fractions.Fraction(1, 2)
+
+    sequential_event[5].duration -= fractions.Fraction(1, 4)
+    sequential_event[6].duration += fractions.Fraction(1, 4)
+
+    sequential_event.split_child_at(fractions.Fraction(27, 4))
+    sequential_event[7].pitch_list[0] += music_parameters.JustIntonationPitch("3/2")
+    sequential_event[10].pitch_list.append(
+        sequential_event[10]
+        .pitch_list[0]
+        .subtract(music_parameters.JustIntonationPitch("4/1"), mutate=False)
+    )
+
+    sequential_event.split_child_at(
+        sequential_event.absolute_time_tuple[9] + fractions.Fraction(1, 2)
+    )
+    sequential_event.split_child_at(
+        sequential_event.absolute_time_tuple[9] + fractions.Fraction(1, 1)
+    )
+
+    for index, duration in enumerate(
+        [
+            fractions.Fraction(2, 3),
+            fractions.Fraction(1, 3),
+            fractions.Fraction(1, 3),
+            fractions.Fraction(2, 3),
+        ]
+    ):
+        sequential_event[index + 8].duration = duration
+
+
+def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContainer):
+    clavichord_time_bracket_container.remove(5)
+    clavichord_time_bracket_container.remove(3)
+    clavichord_time_bracket_container.remove(5)
+    clavichord_time_bracket_container.remove(4)
+    clavichord_time_bracket_container.remove(6)
+    clavichord_time_bracket_container.remove(5)
+
+    clavichord_time_bracket_container[0].delay += fractions.Fraction(2, 1)
+
+    # New or changed time brackets
+    _add_repetitions(clavichord_time_bracket_container)
+    _add_octave_chord(clavichord_time_bracket_container)
+    _adjust_metronome_part(clavichord_time_bracket_container)

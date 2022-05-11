@@ -337,13 +337,33 @@ class ClavichordTimeBracketToAbjadScore(core_converters.abc.Converter):
         self,
         clavichord_time_bracket,
     ) -> abjad.Score:
-        clavichord_sequential_event = clavichord_time_bracket.sequential_event
+        clavichord_sequential_event = (
+            clavichord_time_bracket.get_sequential_event().copy()
+        )
+
+        time_signature_sequence = clavichord_time_bracket.time_signature_sequence
+
+        repetition_count = getattr(clavichord_sequential_event, "repetition_count", 0)
+        if repetition_count > 0:
+            clavichord_sequential_event = clavichord_sequential_event[:1]
+            clavichord_sequential_event[
+                0
+            ].notation_indicator_collection.markup.content = (
+                r"\normalsize { play " f"{repetition_count}x " "}"
+            )
+            clavichord_sequential_event[
+                0
+            ].notation_indicator_collection.markup.direction = "up"
+            duration = fractions.Fraction(clavichord_sequential_event.duration)
+            time_signature_sequence = (
+                abjad.TimeSignature((duration.numerator, duration.denominator)),
+            )
 
         clavichord_sequential_event_to_abjad_staff_group_kwargs = {
             "tempo_envelope": clavichord_time_bracket.tempo_envelope,
-            "time_signature_sequence": clavichord_time_bracket.time_signature_sequence,
+            "time_signature_sequence": time_signature_sequence,
         }
-        if len(clavichord_sequential_event) < 2:
+        if len(clavichord_sequential_event) < 2 and repetition_count < 1:
             clavichord_sequential_event_to_abjad_staff_group_kwargs.update(
                 {"tempo_envelope_to_abjad_attachment_tempo": None}
             )
@@ -357,18 +377,53 @@ class ClavichordTimeBracketToAbjadScore(core_converters.abc.Converter):
             clavichord_sequential_event
         )
         for index, abjad_staff in enumerate(abjad_staff_group):
+            first_leaf = abjad.get.leaf(abjad_staff, 0)
+            abjad.attach(
+                abjad.LilyPondLiteral(r"\set PianoStaff.connectArpeggios = ##t"),
+                first_leaf,
+            )
             selection = abjad.select(abjad_staff)
             if not selection.notes() and not selection.chords():
                 del abjad_staff_group[index]
             else:
-                abjad_staff.remove_commands.append("Time_signature_engraver")
+                if not clavichord_time_bracket.notate_metronome:
+                    abjad_staff.remove_commands.append("Time_signature_engraver")
+                if repetition_count > 0:
+                    # first_leaf = abjad.get.leaf(abjad_staff, 0)
+                    abjad.attach(abjad.Repeat(), abjad_staff)
         # first_leaf = abjad.get.leaf(abjad_staff, 0)
         # abjad.attach(abjad.LilyPondLiteral(r'\omit TimeSignature
 
         cdd_converters.AddTimeBracketMarks(clavichord_time_bracket.start_time, None)(
             None, abjad_staff_group[0]
         )
+
         abjad_score = abjad.Score([abjad_staff_group])
+        if clavichord_time_bracket.notate_metronome:
+            metronome_sequential_event_to_abjad_staff = SequentialEventToRhythmicStaff(
+                **clavichord_sequential_event_to_abjad_staff_group_kwargs
+            )
+            metronome_sequential_event = (
+                clavichord_time_bracket.metronome_sequential_event
+            )
+            metronome_staff_group = metronome_sequential_event_to_abjad_staff.convert(
+                metronome_sequential_event
+            )
+            abjad_score.insert(0, metronome_staff_group)
+
+            for abjad_staff_or_abjad_staff_group, instrument_name_tuple in zip(
+                abjad_score, (("tape", "t."), ("clavichord", "c."))
+            ):
+                sequential_event = core_events.SequentialEvent([])
+                (
+                    sequential_event.instrument_name,
+                    sequential_event.short_instrument_name,
+                ) = instrument_name_tuple
+                abjad_converters.AddInstrumentName(
+                    instrument_name_font_size=r"small \typewriter",
+                    short_instrument_name_font_size=r"small \typewriter",
+                )(sequential_event, abjad_staff_or_abjad_staff_group)
+
         return abjad_score
 
 
@@ -455,24 +510,66 @@ class SustainingInstrumentDataToAbjadScore(core_converters.abc.Converter):
             does_next_event_follows_immediately,
         ) = sustaining_instrument_data
 
-        rest = music_events.NoteLike([], fractions.Fraction(1, 64))
-
         sustaining_sequential_event = sustaining_sequential_event.copy()
         environment_sequential_event = environment_sequential_event.copy()
 
-        if does_next_event_follows_immediately:
-            end_style = "arrow"
-        else:
-            end_style = "hook"
-        sustaining_sequential_event[
-            -1
-        ].notation_indicator_collection.duration_line.end_style = end_style
-        sustaining_sequential_event[
-            -1
-        ].notation_indicator_collection.duration_line.hook_direction = "DOWN"
+        # if does_next_event_follows_immediately:
+        #     end_style = "arrow"
+        # else:
+        #     end_style = "hook"
+        # sustaining_sequential_event[
+        #     -1
+        # ].notation_indicator_collection.duration_line.end_style = end_style
+        # sustaining_sequential_event[
+        #     -1
+        # ].notation_indicator_collection.duration_line.hook_direction = "DOWN"
 
-        sustaining_sequential_event.append(rest)
-        environment_sequential_event.append(rest)
+        for sequential_event in (
+            sustaining_sequential_event,
+            environment_sequential_event,
+        ):
+            hidden_note_rest = music_events.NoteLike("c", fractions.Fraction(1, 4))
+            hidden_note_rest.notation_indicator_collection.duration_line.style = "none"
+            sequential_event.append(hidden_note_rest)
+
+            # rest = music_events.NoteLike([], fractions.Fraction(1, 64))
+            # sequential_event.append(rest)
+
+        ts0_duration = fractions.Fraction(2, 1)
+
+        remaining_duration = sequential_event.duration - ts0_duration
+
+        time_signature_sequence = [
+            abjad.TimeSignature(
+                (
+                    ts0_duration.numerator,
+                    ts0_duration.denominator,
+                )
+            ),
+            abjad.TimeSignature(
+                (
+                    remaining_duration.numerator,
+                    remaining_duration.denominator,
+                )
+            ),
+        ]
+
+        # time_signature_sequence = [
+        #     abjad.TimeSignature(
+        #         (
+        #             sequential_event.duration.numerator,
+        #             sequential_event.duration.denominator,
+        #         )
+        #     ),
+        # ]
+
+        for sequential_event_to_abjad_staff in (
+            self.sustaining_sequential_event_to_abjad_staff,
+            self.environment_sequential_event_to_abjad_staff,
+        ):
+            sequential_event_to_abjad_staff._sequential_event_to_quantized_abjad_container._time_signature_tuple = tuple(
+                time_signature_sequence
+            )
 
         if instrument_name == cdd.constants.CLARINET:
             sustaining_sequential_event = (
@@ -499,6 +596,34 @@ class SustainingInstrumentDataToAbjadScore(core_converters.abc.Converter):
         cdd_converters.AddTimeBracketMarks(start, end)(None, sustaining_abjad_staff)
 
         first_environment_leaf = abjad.get.leaf(environment_abjad_staff, 0)
+        first_sustaining_leaf = sustaining_abjad_staff[0][0][0]
+
+        if does_next_event_follows_immediately:
+            abjad.attach(
+                abjad.LilyPondLiteral(
+                    r"^ \markup { \hspace #12 "
+                    r"\draw-line #'(25 . 0) "
+                    r"\hspace #-0.75 "
+                    r"\arrow-head #X #RIGHT ##t }",
+                ),
+                first_sustaining_leaf,
+            )
+
+        if abjad.get.before_grace_container(first_sustaining_leaf):
+            grace_note_container = abjad.BeforeGraceContainer("c''4")
+            abjad.attach(grace_note_container, first_environment_leaf)
+            first_environment_leaf = grace_note_container[0]
+            abjad.attach(
+                abjad.LilyPondLiteral(
+                    r"\hideNotes",
+                ),
+                first_environment_leaf,
+            )
+            abjad.attach(
+                abjad.LilyPondLiteral(r"\unHideNotes", format_slot="after"),
+                first_environment_leaf,
+            )
+
         abjad.attach(
             abjad.LilyPondLiteral("\\magnifyStaff #(magstep -3.5)"),
             first_environment_leaf,
@@ -509,6 +634,11 @@ class SustainingInstrumentDataToAbjadScore(core_converters.abc.Converter):
                 environment_abjad_staff,
             ]
         )
+
+        for staff in abjad_score:
+            last_leaf = abjad.select(staff).notes()[-1]
+            abjad.attach(abjad.LilyPondLiteral(r"\hideNotes"), last_leaf)
+            abjad.attach(abjad.TimeSignature((9, 4)), abjad.get.leaf(staff[0][1], 0))
         return abjad_score
 
 
@@ -540,7 +670,7 @@ system-system-spacing = #'((basic-distance . 7.5) (padding . 0))
         return paper_block
 
 
-class ClavichordInstrumentScoreListToLilyPondFile(
+class ClavichordInstrumentScoreListToLilyPondFileSmall(
     cdd_converters.AbjadScoreListToLilyPondFile
 ):
     def get_paper_block(self, *args, **kwargs) -> abjad.Block:
@@ -550,6 +680,21 @@ class ClavichordInstrumentScoreListToLilyPondFile(
   (cons '("my size" . (cons (* 2 in) (* 2 in))) paper-alist))
 #(set-paper-size "my size")
 system-system-spacing = #'((basic-distance . 7.5) (padding . 0))
+"""
+        paper_block.items.append(paper_size)
+        return paper_block
+
+
+class ClavichordInstrumentScoreListToLilyPondFileBig(
+    cdd_converters.AbjadScoreListToLilyPondFile
+):
+    def get_paper_block(self, *args, **kwargs) -> abjad.Block:
+        paper_block = super().get_paper_block(*args, **kwargs)
+        paper_size = r"""
+#(set! paper-alist
+  (cons '("my size" . (cons (* 9 in) (* 4.35 in))) paper-alist))
+#(set-paper-size "my size")
+system-system-spacing = #'((basic-distance . 0) (padding . 0))
 """
         paper_block.items.append(paper_size)
         return paper_block
@@ -578,17 +723,24 @@ def process_espressivo(abjad_voice: abjad.Voice):
             espressivo_list.append((start, end))
             start = None
         if abjad.detach(abjad.Articulation("espressivo"), leaf):
-            abjad.attach(
-                abjad.LilyPondLiteral(r"\once \override Hairpin.circled-tip = ##t"),
-                leaf,
-            )
-            abjad.attach(abjad.StartHairpin("<"), leaf)
             start = index
+
+    if start is not None:
+        espressivo_list.append((start, len(leaves) - 1))
 
     for start, end in espressivo_list:
         span = end - start
+        # This is a hack and only valid for staves with only one event
+        if start != 0:
+            start = 0
         center = int(math.ceil(span / 2) + start)
+        start_leaf = leaves[start]
         center_leaf = leaves[center]
+        abjad.attach(
+            abjad.LilyPondLiteral(r"\once \override Hairpin.circled-tip = ##t"),
+            start_leaf,
+        )
+        abjad.attach(abjad.StartHairpin("<"), start_leaf)
         abjad.attach(
             abjad.LilyPondLiteral(r"\once \override Hairpin.circled-tip = ##t"),
             center_leaf,
@@ -615,6 +767,7 @@ def _notate_sustaining_instrument(chapter: cdd.chapters.Chapter, instrument_name
         lilypond_file = abjad_score_list_to_lilypond_file.convert(
             [abjad_score],
             add_ekmelily=True,
+            add_fancy_glissando=True,
             # add_book_preamble=True,
             add_book_preamble=False,
             margin=0,
@@ -652,29 +805,56 @@ def notate_clavichord(chapter: cdd.chapters.Chapter):
         ClavichordTimeBracketToAbjadScore()(clavichord_time_bracket)
         for clavichord_time_bracket in chapter.clavichord_time_bracket_container
     ]
-    abjad_score_list_to_lilypond_file = ClavichordInstrumentScoreListToLilyPondFile()
+    abjad_score_list_to_lilypond_file_small = (
+        ClavichordInstrumentScoreListToLilyPondFileSmall()
+    )
+    abjad_score_list_to_lilypond_file_big = (
+        ClavichordInstrumentScoreListToLilyPondFileBig()
+    )
     lilypond_file_path_list = []
-    for score_index, abjad_score in enumerate(abjad_score_list):
+    for score_index, clavichord_time_bracket, abjad_score in zip(
+        range(len(abjad_score_list)),
+        chapter.clavichord_time_bracket_container,
+        abjad_score_list,
+    ):
+        if clavichord_time_bracket.notate_metronome:
+            abjad_score_list_to_lilypond_file = abjad_score_list_to_lilypond_file_big
+            width = 0.95
+            margin = 13
+            dynamic_change_indication = abjad.StartTextSpan(
+                left_text=abjad.Markup("rit.")
+            )
+
+            for staff_group in abjad_score:
+                for staff in staff_group:
+                    first_leaf = abjad.get.leaf(staff, 0)
+                    last_leaf = abjad.get.leaf(staff, -1)
+                    abjad.attach(dynamic_change_indication, first_leaf)
+                    abjad.attach(abjad.StopTextSpan(), last_leaf)
+        else:
+            abjad_score_list_to_lilypond_file = abjad_score_list_to_lilypond_file_small
+            width = 0.25
+            margin = 0
         lilypond_file = abjad_score_list_to_lilypond_file.convert(
             [abjad_score],
             add_ekmelily=False,
             # add_book_preamble=True,
             add_book_preamble=False,
-            margin=0,
+            margin=margin,
         )
         local_lilypond_file_path = f"{lilypond_file_path}_{score_index}.pdf"
         abjad.persist.as_pdf(lilypond_file, local_lilypond_file_path)
-        lilypond_file_path_list.append(local_lilypond_file_path)
+        formated_local_lilypond_file_path = local_lilypond_file_path.split("/")[-1]
+        lilypond_file_path_list.append(
+            (formated_local_lilypond_file_path, float(width))
+        )
 
     chapter_to_latex_document = cdd_converters.ScoreListChapterToLatexDocument(
-        [
-            lilypond_file_path.split("/")[-1]
-            for lilypond_file_path in lilypond_file_path_list
-        ],
+        lilypond_file_path_list,
         instruction_text=chapter.instrument_name_to_instruction_text[instrument_name],
         width=0.25,
         hspace="0.0cm",
-        vspace="0.2cm",
+        vspace="-0.2cm",
     )
 
     latex_document = chapter_to_latex_document.convert(chapter, instrument_name)
@@ -686,6 +866,6 @@ def notate_noise(chapter: cdd.chapters.Chapter):
 
 
 def main(chapter: cdd.chapters.Chapter):
-    # notate_soprano(chapter)
-    # notate_clarinet(chapter)
+    notate_soprano(chapter)
+    notate_clarinet(chapter)
     notate_clavichord(chapter)

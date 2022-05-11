@@ -240,12 +240,16 @@ class ScoreListChapterToLatexDocument(ScoreChapterToLatexDocument):
         latex_document.append(pylatex.NoEscape(self.instruction_text))
         figure = pylatex.Figure(position="h!")
         for score_path in self.score_path:
+            try:
+                score_path, width = score_path
+            except ValueError:
+                score_path, width = score_path, self.width
             if self._hspace:
                 figure.append(pylatex.NoEscape(r"\hspace{" + self._hspace + "}"))
             figure.append(
                 pylatex.NoEscape(
                     r"\includegraphics[width="
-                    + str(self.width)
+                    + str(width)
                     + r"\textwidth]{"
                     + score_path
                     + "}"

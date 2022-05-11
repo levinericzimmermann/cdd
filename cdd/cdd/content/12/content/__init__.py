@@ -81,6 +81,8 @@ if a note has multiple vowels: interpolate between them over the course of the g
                 )[0],
                 self.group_collection,
                 self.tempo_envelope,
+                self.metronome_sequential_event,
+                self.time_signature_sequence,
             )
         )
 
@@ -265,6 +267,7 @@ if a note has multiple vowels: interpolate between them over the course of the g
 
             sequential_event_with_correct_tempo.duration *= 4
 
+            # content_duration = fractions.Fraction(4, 1)
             content_duration = fractions.Fraction(4, 1)
             environment_duration = content_duration
             event_data_list = []
@@ -335,9 +338,7 @@ if a note has multiple vowels: interpolate between them over the course of the g
                 event_data0.append(does_next_event_follows_immediately)
 
             event_data_list[-1].append(False)
-            event_data_tuple = list(
-                list(event_data) for event_data in event_data_list
-            )
+            event_data_tuple = list(list(event_data) for event_data in event_data_list)
 
             instrument_name_to_data.update(
                 {sustaining_instrument_name: event_data_tuple}
