@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+walkman/bin/walkman cdd.toml

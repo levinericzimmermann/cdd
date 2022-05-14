@@ -1,0 +1,10 @@
+name = "cdd"
+
+[soundfile.6]
+path = "tapes/6_cdd.wav"
+
+[soundfile.12]
+path = "tapes/12_cdd.wav"
+
+[soundfile.146]
+path = "tapes/146_cdd.wav"
