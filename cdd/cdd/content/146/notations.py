@@ -357,7 +357,6 @@ def add_last_phrase_hairpin(last_score):
         abjad.attach(abjad.StopHairpin(), last_leaf)
         cdd.utilities.add_last_bar_line(last_leaf)
 
-
         leaves = abjad.select(staff).leaves()
         leaf_8 = leaves[8]
         last_leaf = leaves[-1]
@@ -652,7 +651,9 @@ def notate_noise(chapter: cdd.chapters.Chapter):
     )
 
     latex_document = cdd_converters.TableChapterToLatexDocument(
-        chapter.NOISE.instruction_text, table
+        chapter.NOISE.instruction_text,
+        table,
+        instruction_text_after=chapter.NOISE.instruction_text_after,
     ).convert(chapter, instrument)
     latex_document.generate_pdf(notation_file_path, clean_tex=False)
 
