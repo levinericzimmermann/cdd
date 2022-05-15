@@ -107,6 +107,7 @@ ENV/
 # no audio / video files
 *.wav
 *.aiff
+*.aif
 *.mp3
 *.ogg
 *.WAV
@@ -156,3 +157,6 @@ develop-eggs/
 # No pickled data
 *.pickled
 *.pickle
+
+# Project specific files
+walkman/walkman
