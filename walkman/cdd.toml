@@ -8,3 +8,11 @@ path = "tapes/12_cdd.wav"
 
 [soundfile.146]
 path = "tapes/146_cdd.wav"
+
+[audio.channel-mapping]
+# first channel is reserved for electronic instrument ('aobjects')
+0 = 1
+1 = 2
+2 = 3
+# 3 is silent channel
+3 = 3
