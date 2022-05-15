@@ -12,7 +12,7 @@ from mutwo import music_parameters
 import cdd
 
 
-def main(chapter: cdd.chapters.Chapter):
+def render(chapter: cdd.chapters.Chapter):
     tempo_converter = core_converters.TempoConverter(chapter.tempo_envelope)
     simultaneous_event = tempo_converter.convert(chapter.simultaneous_event)
     # simultaneous_event = chapter.simultaneous_event.set_parameter(

@@ -3,6 +3,7 @@ from setuptools import setup
 setup(
     name="cdd",
     install_requires=[
+        "yamm==0.1",
         "PyPDF2==1.27.9",
         "more_itertools==8.12.0",
         "mutwo.ext-common-generators==0.8.1",

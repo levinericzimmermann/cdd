@@ -76,7 +76,8 @@ class SequentialEventToRhythmicStaff(abjad_converters.SequentialEventToAbjadVoic
         staff = abjad.Staff([voice], lilypond_type="RhythmicStaff", name=tag)
         staff.remove_commands.append("Time_signature_engraver")
         abjad_converters.AddInstrumentName(
-            instrument_name_font_size=r"small \typewriter", short_instrument_name_font_size=r"small \typewriter"
+            instrument_name_font_size=r"small \typewriter",
+            short_instrument_name_font_size=r"small \typewriter",
         )(event_to_convert, staff)
         return staff
 
@@ -229,7 +230,7 @@ system-system-spacing = #'((basic-distance . 7.5) (padding . 0))
         return paper_block
 
 
-def main(chapter: cdd.chapters.Chapter):
+def notate_speaking_trio(chapter: cdd.chapters.Chapter):
     abjad_score_list_to_lilypond_file = AbjadScoreListToLilyPondFile()
     simultaneous_event_to_abjad_score = SimultaneousEventToAbjadScore(
         time_signature_sequence=chapter.time_signature_sequence,
@@ -243,21 +244,35 @@ def main(chapter: cdd.chapters.Chapter):
         abjad.get.leaf(abjad_score_list[0], 0),
     )
     lilypond_file = abjad_score_list_to_lilypond_file.convert(
-        abjad_score_list, add_ekmelily=False, add_book_preamble=False, margin=0
+        abjad_score_list, add_ekmelily=False, add_book_preamble=False, margin=5
     )
     for (
         instrument_name
     ) in cdd.constants.INSTRUMENT_NAME_TO_SHORT_INSTRUMENT_NAME.keys():
-        notation_file_path = chapter.get_notation_path(instrument_name)
-        lilypond_file_path = f"{notation_file_path}_lilypond.pdf"
-        abjad.persist.as_pdf(lilypond_file, lilypond_file_path)
-        chapter_to_latex_document = cdd_converters.ScoreChapterToLatexDocument(
-            lilypond_file_path.split("/")[-1],
-            instruction_text=chapter.instruction_text,
-            width=1.2,
-            hspace="-1.5cm",
-        )
-        latex_document = chapter_to_latex_document.convert(chapter, instrument_name)
-        latex_document.generate_pdf(
-            chapter.get_notation_path(instrument_name), clean_tex=True
-        )
+        if instrument_name != cdd.constants.NOISE:
+            notation_file_path = chapter.get_notation_path(instrument_name)
+            lilypond_file_path = f"{notation_file_path}_lilypond.pdf"
+            abjad.persist.as_pdf(lilypond_file, lilypond_file_path)
+            chapter_to_latex_document = cdd_converters.ScoreChapterToLatexDocument(
+                lilypond_file_path.split("/")[-1],
+                instruction_text=chapter.instruction_text,
+                width=1.2,
+                hspace="-1.5cm",
+            )
+            latex_document = chapter_to_latex_document.convert(chapter, instrument_name)
+            latex_document.generate_pdf(
+                chapter.get_notation_path(instrument_name), clean_tex=True
+            )
+
+
+def notate_noise(chapter: cdd.chapters.Chapter):
+    instrument_name = cdd.constants.NOISE
+    notation_file_path = chapter.get_notation_path(instrument_name)
+    cdd_converters.ScoreListChapterToLatexDocument([], chapter.instruction_text_noise)(
+        chapter, instrument_name
+    ).generate_pdf(notation_file_path)
+
+
+def main(chapter: cdd.chapters.Chapter):
+    notate_noise(chapter)
+    notate_speaking_trio(chapter)

@@ -83,8 +83,10 @@ class TableChapterToLatexDocument(ChapterToLatexDocument):
         font: str = "\\tt",
         column_space: str = "0.5cm",
         row_height: float = 2,
+        instruction_text_after: typing.Optional[str] = None,
     ):
         self.instruction_text = instruction_text
+        self.instruction_text_after = instruction_text_after
         self.text_size = text_size
         self.column_count = len(table[0])
         self.row_count = row_count
@@ -125,6 +127,8 @@ class TableChapterToLatexDocument(ChapterToLatexDocument):
                         ]
                     )
             latex_document.append(tabular)
+        if self.instruction_text_after:
+            latex_document.append(pylatex.NoEscape(self.instruction_text_after))
         return latex_document
 
 

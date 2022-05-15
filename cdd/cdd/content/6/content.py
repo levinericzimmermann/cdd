@@ -352,3 +352,21 @@ singer leads group by playing the additional percussion line.
 instrument can be any (but only one) pitched metallic percussion, e.g. a tiny bell, crotales, kalimba, \dots
 \end{footnotesize}
 """
+
+    instruction_text_noise = r"""
+\begin{center}
+    \bigskip
+    \bigskip
+
+    play field of noise from circa
+
+    \bigskip
+
+    { \tt \large 0'40 to 2'45 }
+
+    \bigskip
+
+    soft but rich, steady but granular.\\
+    from silence to silence.
+\end{center}
+"""
