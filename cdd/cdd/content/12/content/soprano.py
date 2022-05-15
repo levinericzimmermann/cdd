@@ -15,7 +15,7 @@ def post_process_time_bracket_1(soprano_time_bracket):
         ]
     )
     grace_note_sequential_event[0].playing_indicator_collection.glissando = True
-    grace_note_sequential_event[0].playing_indicator_collection.tie = True
+    # grace_note_sequential_event[0].playing_indicator_collection.tie = True
     sequential_event[0].grace_note_sequential_event = grace_note_sequential_event
 
 
@@ -38,7 +38,7 @@ def post_process_time_bracket_3(soprano_time_bracket):
     )
 
 
-def post_process_time_bracket_4(soprano_time_bracket):
+def post_process_time_bracket_4_old(soprano_time_bracket):
     sequential_event = soprano_time_bracket[2]
     sequential_event.split_child_at(fractions.Fraction(5, 2))
     sequential_event.split_child_at(fractions.Fraction(6, 2))
@@ -50,6 +50,16 @@ def post_process_time_bracket_4(soprano_time_bracket):
         sequential_event[index].playing_indicator_collection.hairpin.symbol = None
 
 
+def post_process_time_bracket_4(soprano_time_bracket):
+    sequential_event = soprano_time_bracket[2]
+    sequential_event.split_child_at(fractions.Fraction(5, 2))
+    sequential_event[0].lyric.is_last_syllable = False
+    sequential_event[1].pitch_list = "256/189"
+    for index in (1,):
+        sequential_event[index].lyric = music_parameters.DirectLyric("")
+        sequential_event[index].playing_indicator_collection.hairpin.symbol = None
+
+
 def post_process_time_bracket_12(soprano_time_bracket):
     pass
     # sequential_event = soprano_time_bracket[2]
@@ -57,7 +67,7 @@ def post_process_time_bracket_12(soprano_time_bracket):
 
 
 def post_process(soprano_time_bracket_tuple: tuple):
-    # post_process_time_bracket_4(soprano_time_bracket_tuple[4])
+    post_process_time_bracket_4(soprano_time_bracket_tuple[4])
     post_process_time_bracket_1(soprano_time_bracket_tuple[1])
     post_process_time_bracket_3(soprano_time_bracket_tuple[3])
     post_process_time_bracket_12(soprano_time_bracket_tuple[12])

@@ -481,6 +481,10 @@ def _adjust_metronome_part(
     ):
         sequential_event[index + 8].duration = duration
 
+    sequential_event[10].pitch_list[0] -= music_parameters.JustIntonationPitch("4/3")
+    sequential_event[11].pitch_list[0] -= music_parameters.JustIntonationPitch("2/1")
+    sequential_event[12].pitch_list[1] -= music_parameters.JustIntonationPitch("4/3")
+
 
 def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContainer):
     clavichord_time_bracket_container.remove(5)

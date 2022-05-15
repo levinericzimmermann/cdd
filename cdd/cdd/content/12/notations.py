@@ -730,10 +730,11 @@ def process_espressivo(abjad_voice: abjad.Voice):
 
     for start, end in espressivo_list:
         span = end - start
-        # This is a hack and only valid for staves with only one event
-        if start != 0:
-            start = 0
         center = int(math.ceil(span / 2) + start)
+        # # This is a hack and only valid for staves with only one event
+        # if start != 0:
+        #     start = 0
+        #     center += 1
         start_leaf = leaves[start]
         center_leaf = leaves[center]
         abjad.attach(
@@ -866,6 +867,6 @@ def notate_noise(chapter: cdd.chapters.Chapter):
 
 
 def main(chapter: cdd.chapters.Chapter):
-    notate_soprano(chapter)
-    notate_clarinet(chapter)
+    # notate_soprano(chapter)
+    # notate_clarinet(chapter)
     notate_clavichord(chapter)
