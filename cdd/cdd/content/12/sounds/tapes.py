@@ -1,3 +1,5 @@
+from distutils.dir_util import copy_tree
+
 from mutwo import core_converters
 from mutwo import core_events
 from mutwo import csound_converters
@@ -98,6 +100,32 @@ def render_intonation_help(chapter):
 
     sound_file_path = chapter.get_sound_file_path("intonation")
     event_to_sound_file.convert(simultaneous_event, sound_file_path)
+
+    note_index = 0
+    intonation_directory = "12_intonation"
+    intonation_file_path = (
+        f"{configurations.PATH.BUILDS.SOUND_FILES}/{intonation_directory}"
+    )
+    for absolute_time, note_like in zip(
+        simultaneous_event[0].absolute_time_tuple, simultaneous_event[0]
+    ):
+        if note_like.pitch_list:
+            end_time = absolute_time + note_like.duration
+            new_simultaneous_event = core_events.SimultaneousEvent(
+                [
+                    sequential_event.cut_out(absolute_time, end_time, mutate=False)
+                    for sequential_event in simultaneous_event
+                ]
+            )
+            sound_file_path = f"{intonation_file_path}/12_intonation_{note_index}.wav"
+            event_to_sound_file.convert(new_simultaneous_event, sound_file_path)
+            note_index += 1
+
+    # Copy data for walkman file
+    copy_tree(
+        intonation_file_path,
+        f"{configurations.PATH.WALKMAN.TAPES}/{intonation_directory}",
+    )
 
 
 def main(chapter):
