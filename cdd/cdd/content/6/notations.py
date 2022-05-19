@@ -1,5 +1,4 @@
 import typing
-
 import abjad
 import expenvelope
 import quicktions as fractions
@@ -240,8 +239,12 @@ def notate_speaking_trio(chapter: cdd.chapters.Chapter):
         simultaneous_event_to_abjad_score.convert(chapter.simultaneous_event)
     ]
     abjad.attach(
-        abjad.Markup(r"\typewriter { duration: circa 3'15 }", direction="^"),
+        abjad.Markup(r"\typewriter { duration: circa 5'00 }", direction="^"),
         abjad.get.leaf(abjad_score_list[0], 0),
+    )
+    abjad.attach(
+        abjad.Fermata(command="longfermata"),
+        abjad.select(abjad_score_list[0][0]).leaves()[50],
     )
     lilypond_file = abjad_score_list_to_lilypond_file.convert(
         abjad_score_list, add_ekmelily=False, add_book_preamble=False, margin=5
