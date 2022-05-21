@@ -2,43 +2,55 @@ name = "12_intonation"
 
 [soundfile.intonation-0]
 path = "tapes/12_intonation/12_intonation_0.wav"
+decibel = -25
 
 [soundfile.intonation-1]
 path = "tapes/12_intonation/12_intonation_1.wav"
+decibel = -25
 
 [soundfile.intonation-2]
 path = "tapes/12_intonation/12_intonation_2.wav"
+decibel = -20
 
 [soundfile.intonation-3]
 path = "tapes/12_intonation/12_intonation_3.wav"
+decibel = -20
 
 [soundfile.intonation-4]
 path = "tapes/12_intonation/12_intonation_4.wav"
+decibel = -20
 
 [soundfile.intonation-5]
 path = "tapes/12_intonation/12_intonation_5.wav"
+decibel = -20
 
 [soundfile.intonation-6]
 path = "tapes/12_intonation/12_intonation_6.wav"
+decibel = -20
 
 [soundfile.intonation-7]
 path = "tapes/12_intonation/12_intonation_7.wav"
+decibel = -20
 
 [soundfile.intonation-8]
+decibel = -20
 path = "tapes/12_intonation/12_intonation_8.wav"
 
 [soundfile.intonation-9]
 path = "tapes/12_intonation/12_intonation_9.wav"
+decibel = -20
 
 [soundfile.intonation-10]
 path = "tapes/12_intonation/12_intonation_10.wav"
+decibel = -20
 
 [soundfile.intonation-11]
 path = "tapes/12_intonation/12_intonation_11.wav"
+decibel = -20
 
 [soundfile.intonation-12]
 path = "tapes/12_intonation/12_intonation_12.wav"
+decibel = -20
 
 [audio.channel_mapping]
-# first channel is reserved for electronic instrument ('aobjects')
-0 = 1
+0 = [0, 1, 2, 3]
