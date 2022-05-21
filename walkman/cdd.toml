@@ -2,15 +2,19 @@ name = "cdd"
 
 [soundfile.6_1]
 path = "tapes/6_cdd-tape-1.wav"
+decibel = -44
 
 [soundfile.6_2]
 path = "tapes/6_cdd-tape-2.wav"
+decibel = -44
 
 [soundfile.12]
 path = "tapes/12_cdd.wav"
+decibel = -25
 
 [soundfile.146]
 path = "tapes/146_cdd.wav"
+decibel = -22
 
 [audio.channel_mapping]
 # first channel is reserved for electronic instrument ('aobjects')
