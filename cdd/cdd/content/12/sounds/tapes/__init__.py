@@ -8,6 +8,8 @@ from mutwo import music_events
 
 from cdd import configurations
 
+from . import chords
+
 
 def render_metronome(chapter):
     event_to_csound_score = csound_converters.EventToCsoundScore(
@@ -106,6 +108,9 @@ def render_intonation_help(chapter):
     intonation_file_path = (
         f"{configurations.PATH.BUILDS.SOUND_FILES}/{intonation_directory}"
     )
+    intonation_soprano_file_path = (
+        f"{configurations.PATH.BUILDS.SOUND_FILES}/12_intonation-solo-soprano"
+    )
     for absolute_time, note_like in zip(
         simultaneous_event[0].absolute_time_tuple, simultaneous_event[0]
     ):
@@ -118,7 +123,9 @@ def render_intonation_help(chapter):
                 ]
             )
             sound_file_path = f"{intonation_file_path}/12_intonation_{note_index}.wav"
+            sound_file_path_soprano = f"{intonation_soprano_file_path}/12_intonation_soprano_pitch_{note_index}.wav"
             event_to_sound_file.convert(new_simultaneous_event, sound_file_path)
+            event_to_sound_file.convert(note_like, sound_file_path_soprano)
             note_index += 1
 
     # Copy data for walkman file
@@ -129,6 +136,7 @@ def render_intonation_help(chapter):
 
 
 def main(chapter):
+    chords.main(chapter)
     render_midi_tones(chapter)
     render_metronome(chapter)
     render_intonation_help(chapter)
