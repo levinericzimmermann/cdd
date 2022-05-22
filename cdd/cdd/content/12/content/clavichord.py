@@ -383,20 +383,25 @@ def _add_repetitions(clavichord_time_bracket_container: ClavichordTimeBracketCon
         ]
         for group_index in (4, 5)
     ]
-    tremolo0_pitch_count_list = [8, 40]
+    # tremolo0_pitch_count_list = [8, 40]
+    tremolo0_pitch_count_list = [8, 20]
+    tremolo0_duration_list = [fractions.Fraction(1, 4), fractions.Fraction(1, 2)]
     tremolo_sequential_event_list = [
         core_events.SequentialEvent([]),
         core_events.SequentialEvent([]),
     ]
-    for tremolo_sequential_event0, pitch, pitch_count in zip(
-        tremolo_sequential_event_list, tremolo0_pitch_list, tremolo0_pitch_count_list
+    for tremolo_sequential_event0, pitch, pitch_count, note_duration in zip(
+        tremolo_sequential_event_list,
+        tremolo0_pitch_list,
+        tremolo0_pitch_count_list,
+        tremolo0_duration_list,
     ):
         tremolo_sequential_event0.repetition_count = pitch_count
         for _ in range(pitch_count):
             tremolo_sequential_event0.append(
                 music_events.NoteLike(
                     cdd_constants.CLAVICHORD_AMBITUS.get_pitch_variant_tuple(pitch)[-1],
-                    fractions.Fraction(1, 4),
+                    note_duration,
                 )
             )
     clavichord_time_bracket_container[
@@ -439,6 +444,34 @@ def _add_octave_chord(
     clavichord_time_bracket_container.append_clavichord_time_bracket(
         2, fractions.Fraction(13, 2), sequential_event, False
     )
+
+
+def _improve_group_2_beginning(
+    clavichord_time_bracket_container: ClavichordTimeBracketContainer,
+):
+    sequential_event = clavichord_time_bracket_container[8].sequential_event
+    sequential_event.set_parameter("duration", fractions.Fraction(2, 1))
+    sequential_event.append(sequential_event[-1])
+
+
+def _add_arpeggio_to_group_2(
+    clavichord_time_bracket_container: ClavichordTimeBracketContainer,
+):
+    sequential_event = clavichord_time_bracket_container[9].sequential_event
+    note_like_with_arpeggio = sequential_event[-1]
+    note_like_with_arpeggio.playing_indicator_collection.arpeggio.direction = "up"
+    main_pitch = note_like_with_arpeggio.pitch_list[0]
+    note_like_with_arpeggio.duration = fractions.Fraction(2, 1)
+    note_like_with_arpeggio.pitch_list = [
+        main_pitch - music_parameters.JustIntonationPitch("2/1"),
+        main_pitch,
+        main_pitch + music_parameters.JustIntonationPitch("3/2"),
+        main_pitch + music_parameters.JustIntonationPitch("2/1"),
+        main_pitch + music_parameters.JustIntonationPitch("7/3"),
+        main_pitch + music_parameters.JustIntonationPitch("3/1"),
+    ]
+    # sequential_event.append(music_events.NoteLike([], fractions.Fraction(2, 1)))
+    # sequential_event.append(note_like_with_arpeggio)
 
 
 def _adjust_metronome_part(
@@ -485,6 +518,10 @@ def _adjust_metronome_part(
     sequential_event[11].pitch_list[0] -= music_parameters.JustIntonationPitch("2/1")
     sequential_event[12].pitch_list[1] -= music_parameters.JustIntonationPitch("4/3")
 
+    sequential_event.squash_in(
+        fractions.Fraction(23, 2), music_events.NoteLike([], fractions.Fraction(1, 4))
+    )
+
 
 def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContainer):
     clavichord_time_bracket_container.remove(5)
@@ -499,4 +536,6 @@ def post_process(clavichord_time_bracket_container: ClavichordTimeBracketContain
     # New or changed time brackets
     _add_repetitions(clavichord_time_bracket_container)
     _add_octave_chord(clavichord_time_bracket_container)
+    _improve_group_2_beginning(clavichord_time_bracket_container)
+    _add_arpeggio_to_group_2(clavichord_time_bracket_container)
     _adjust_metronome_part(clavichord_time_bracket_container)
