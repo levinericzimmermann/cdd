@@ -10,7 +10,7 @@ decibel = -44
 
 [soundfile.12]
 path = "tapes/12_cdd.wav"
-decibel = -25
+decibel = -29
 
 [soundfile.146]
 path = "tapes/146_cdd.wav"
@@ -23,3 +23,7 @@ decibel = -22
 2 = 3
 # 3 is silent channel
 3 = 3
+
+[reverb]
+sound_file_path = "impulse-responses/Philipps-Quadrophonic.wav"
+decibel = -22
