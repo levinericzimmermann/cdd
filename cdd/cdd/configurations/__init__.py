@@ -1,7 +1,7 @@
 import os
 
 # CHAPTER_TO_RENDER_TUPLE = ("6", "12", "60", "146")
-# CHAPTER_TO_RENDER_TUPLE = ("6",)
+# CHAPTER_TO_RENDER_TUPLE = ("146",)
 CHAPTER_TO_RENDER_TUPLE = ("12",)
 
 
@@ -36,6 +36,8 @@ PATH.ETC = "etc"
 PATH.ETC.CSOUND = "csound"
 PATH.ETC.ISIS = "isis"
 
+PATH.WALKMAN = "walkman"
+PATH.WALKMAN.TAPES = "tapes"
 
 FORCE_TO_COMPUTE_FADO = False
 FORCE_TO_COMPUTE_PESSOA = True

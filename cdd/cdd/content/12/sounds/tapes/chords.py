@@ -2,7 +2,6 @@ import copy
 import itertools
 
 import quicktions as fractions
-import ranges
 
 from mutwo import common_generators
 from mutwo import core_converters
@@ -122,68 +121,6 @@ class ChapterToSequentialEvent(core_converters.abc.Converter):
             chord_sequential_event_to_pitch_list_tuple
         )
 
-    def _get_time_range_to_pitch_list_dict(
-        self,
-        pitch_list_tuple: tuple[list[music_parameters.JustIntonationPitch], ...],
-        soprano_sequential_event: core_events.TaggedSequentialEvent,
-    ) -> ranges.RangeDict:
-        soprano_sequential_event = soprano_sequential_event.tie_by(
-            lambda *events: all(
-                [
-                    not (hasattr(event, "pitch_list") and event.pitch_list)
-                    for event in events
-                ]
-            ),
-            mutate=False,
-        )
-        pitch_list_iterator = iter(pitch_list_tuple)
-        range_dict = {}
-        previous_pitch_list = []
-        next_pitch_list = None
-        for absolute_time, simple_event_or_note_like in zip(
-            soprano_sequential_event.absolute_time_tuple, soprano_sequential_event
-        ):
-            pitch_list = getattr(simple_event_or_note_like, "pitch_list", [])
-            end = absolute_time + simple_event_or_note_like.duration
-            if pitch_list:
-                if next_pitch_list:
-                    pitch_list = next_pitch_list
-                    next_pitch_list = None
-                else:
-                    pitch_list = next(pitch_list_iterator)
-
-                range_dict.update(
-                    {
-                        ranges.Range(
-                            absolute_time,
-                            end,
-                        ): pitch_list
-                    }
-                )
-            else:
-                pitch_list = previous_pitch_list
-                try:
-                    next_pitch_list = next(pitch_list_iterator)
-                except StopIteration:
-                    next_pitch_list = pitch_list
-                new_start0 = (simple_event_or_note_like.duration * 0.5) + absolute_time
-
-                range_dict.update(
-                    {
-                        ranges.Range(
-                            absolute_time,
-                            new_start0,
-                        ): pitch_list,
-                        ranges.Range(
-                            new_start0,
-                            end,
-                        ): next_pitch_list,
-                    }
-                )
-
-            previous_pitch_list = pitch_list
-        return ranges.RangeDict(range_dict)
-
     def convert(self, chapter):
         sequential_event = self._time_signature_sequence_to_rhythm_sequential_event(
             chapter.time_signature_sequence
@@ -192,23 +129,52 @@ class ChapterToSequentialEvent(core_converters.abc.Converter):
             chapter.chord_sequential_event
         )
 
-        range_dict = self._get_time_range_to_pitch_list_dict(
-            pitch_list_tuple,
-            tuple(chapter.simultaneous_event.get_event_iterator_by(tag="soprano"))[0],
-        )
-
         for absolute_time, note_like_or_simple_event in zip(
             sequential_event.absolute_time_tuple, sequential_event
         ):
             if hasattr(note_like_or_simple_event, "pitch_list"):
+                pitch_list = pitch_list_tuple[
+                    chapter.time_range_to_pitch_list_index_dict[absolute_time]
+                ]
                 note_like_or_simple_event.pitch_list = [
-                    copy.deepcopy(pitch) for pitch in range_dict[absolute_time]
+                    copy.deepcopy(pitch) for pitch in pitch_list
                 ]
 
         tempo_converter = core_converters.TempoConverter(chapter.tempo_envelope)
         sequential_event = tempo_converter(sequential_event)
 
         return sequential_event
+
+
+class SequentialEventToSimultaneousEvent(core_converters.abc.Converter):
+    def convert(
+        self, sequential_event: core_events.SequentialEvent
+    ) -> core_events.SimultaneousEvent:
+        simultaneous_event = core_events.SimultaneousEvent(
+            [core_events.SequentialEvent([]) for _ in range(3)]
+        )
+        gray_code_cycle = itertools.cycle(common_generators.reflected_binary_code(3, 4))
+        for note_like_or_simple_event in sequential_event:
+            if (
+                hasattr(note_like_or_simple_event, "pitch_list")
+                and note_like_or_simple_event.pitch_list
+            ):
+                channel_tuple = next(gray_code_cycle)
+                for sequential_event, pitch, channel in zip(
+                    simultaneous_event,
+                    note_like_or_simple_event.pitch_list,
+                    channel_tuple,
+                ):
+                    new_note_like = note_like_or_simple_event.set_parameter(
+                        "pitch_list", [pitch], mutate=False
+                    )
+                    new_note_like.channel = channel
+                    sequential_event.append(new_note_like)
+            else:
+                for sequential_event in simultaneous_event:
+                    sequential_event.append(copy.deepcopy(note_like_or_simple_event))
+
+        return simultaneous_event
 
 
 def to_sound_file(sequential_event, chapter, instrument_name):
@@ -223,27 +189,7 @@ def to_sound_file(sequential_event, chapter, instrument_name):
         f"{configurations.PATH.ETC.CSOUND}/12_chords.orc", event_to_csound_score
     )
     sequential_event.duration *= 4
-    simultaneous_event = core_events.SimultaneousEvent(
-        [core_events.SequentialEvent([]) for _ in range(3)]
-    )
-    gray_code_cycle = itertools.cycle(common_generators.reflected_binary_code(3, 4))
-    for note_like_or_simple_event in sequential_event:
-        if (
-            hasattr(note_like_or_simple_event, "pitch_list")
-            and note_like_or_simple_event.pitch_list
-        ):
-            channel_tuple = next(gray_code_cycle)
-            for sequential_event, pitch, channel in zip(
-                simultaneous_event, note_like_or_simple_event.pitch_list, channel_tuple
-            ):
-                new_note_like = note_like_or_simple_event.set_parameter(
-                    "pitch_list", [pitch], mutate=False
-                )
-                new_note_like.channel = channel
-                sequential_event.append(new_note_like)
-        else:
-            for sequential_event in simultaneous_event:
-                sequential_event.append(copy.deepcopy(note_like_or_simple_event))
+    simultaneous_event = SequentialEventToSimultaneousEvent()(sequential_event)
     event_to_sound_file.convert(
         simultaneous_event, chapter.get_sound_file_path(instrument_name)
     )

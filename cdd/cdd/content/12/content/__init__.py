@@ -1,4 +1,5 @@
 import quicktions as fractions
+import ranges
 
 from mutwo import core_converters
 from mutwo import core_events
@@ -62,6 +63,12 @@ if a note has multiple vowels: interpolate between them over the course of the g
 
         # Ensure order of instruments is correct
         self.sort_simultaneous_event()
+
+        self.time_range_to_pitch_list_index_dict = (
+            self._get_time_range_to_pitch_list_index_dict(
+                tuple(self.simultaneous_event.get_event_iterator_by(tag="soprano"))[0],
+            )
+        )
 
         self.metronome_sequential_event = (
             tapes.TimeSignatureSequenceToSequentialEvent()(self.time_signature_sequence)
@@ -345,3 +352,72 @@ if a note has multiple vowels: interpolate between them over the course of the g
             )
 
         return instrument_name_to_data
+
+    def _get_time_range_to_pitch_list_index_dict(
+        self,
+        soprano_sequential_event: core_events.TaggedSequentialEvent,
+    ) -> ranges.RangeDict:
+        soprano_sequential_event = soprano_sequential_event.tie_by(
+            lambda *events: all(
+                [
+                    not (hasattr(event, "pitch_list") and event.pitch_list)
+                    for event in events
+                ]
+            ),
+            mutate=False,
+        )
+
+        def get_pitch_list_index_iterator():
+            index = 0
+            while True:
+                yield index
+                index += 1
+
+        pitch_list_index_iterator = get_pitch_list_index_iterator()
+
+        range_dict = {}
+        previous_pitch_list_index = 0
+        next_pitch_list_index = None
+        for absolute_time, simple_event_or_note_like in zip(
+            soprano_sequential_event.absolute_time_tuple, soprano_sequential_event
+        ):
+            pitch_list = getattr(simple_event_or_note_like, "pitch_list", [])
+            end = absolute_time + simple_event_or_note_like.duration
+            if pitch_list:
+                if next_pitch_list_index is not None:
+                    pitch_list_index = next_pitch_list_index
+                    next_pitch_list_index = None
+                else:
+                    pitch_list_index = next(pitch_list_index_iterator)
+
+                range_dict.update(
+                    {
+                        ranges.Range(
+                            absolute_time,
+                            end,
+                        ): pitch_list
+                    }
+                )
+            else:
+                pitch_list_index = previous_pitch_list_index
+                try:
+                    next_pitch_list_index = next(pitch_list_index_iterator)
+                except StopIteration:
+                    next_pitch_list_index = pitch_list_index
+                new_start0 = (simple_event_or_note_like.duration * 0.5) + absolute_time
+
+                range_dict.update(
+                    {
+                        ranges.Range(
+                            absolute_time,
+                            new_start0,
+                        ): pitch_list_index,
+                        ranges.Range(
+                            new_start0,
+                            end,
+                        ): next_pitch_list_index,
+                    }
+                )
+
+            previous_pitch_list_index = pitch_list_index
+        return ranges.RangeDict(range_dict)
