@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+cd etc/faust
+faust2lv2 -nvoices 16 -novoicectrls sfformantModelBP.dsp
+cp -r sfformantModelBP.lv2/ ~/.lv2/
