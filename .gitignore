@@ -160,3 +160,10 @@ develop-eggs/
 
 # Project specific files
 walkman/walkman
+
+# compiled faust files
+etc/faust/sfformantModelBP.lv2/
+etc/faust/faust.7HJ/
+
+# private data
+cdd/data/pessoa/

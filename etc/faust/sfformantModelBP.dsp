@@ -12,13 +12,20 @@ bend = ba.semi2ratio(hslider("bend[midi:pitchwheel]",0,-2,2,0.0001)) : si.polySm
 extra_bend = ba.semi2ratio(hslider("extra_bend",0,-2,2,0.0001));
 voice_type = hslider("voice_type",0,0,4,0.001);
 vowel = hslider("vowel",0,0,4,0.001);
-extype = hslider("extype",0,0,1,0.001);
+extype_slider = hslider("extype",0,0,1,0.001);
 freq = baseFreq * bend * extra_bend;
 minimalGain = 0.1;
 gain = hslider("gain", 0.25, 0, 1, 0.001);
 
 envelope = en.adsr(2, 1.5, 0.8, 4, gate);
 filter_envelope = en.adsre(4.95, 1.5, 0.8, 6, gate) + 0.01;
+tremolo_envelope = en.asr(5.86, 1, 2, gate);
+
+tremolo_frequency = ((os.lf_triangle(0.2) + 1) / 2) + 0.85;
+tremolo = (((os.lf_triangle(tremolo_frequency) + 1) / 2) * abs(tremolo_envelope - 1)) + tremolo_envelope;
+extype_envelope = abs(en.asr(2, 1, 2, gate) - 1);
+
+extype = extype_envelope + extype_slider;
 
 // formant_synthesis = pm.SFFormantModelBP(voice_type, vowel, extype, freq, gain);
 // formant_synthesis = pm.SFFormantModelFofCycle(voice_type, vowel, freq, gain);
@@ -58,4 +65,4 @@ formant_synthesis = formant_synthesis_complex, formant_synthesis_basic: si.inter
 filter_partial = (((no.lfnoise(3) + 1) / 2) * 22) + 35;
 filtered_formant_synthesis = formant_synthesis : fi.lowpass6e(freq * filter_partial * filter_envelope) : fi.highpass3e(freq * 0.75);
 
-process = filtered_formant_synthesis * envelope;
+process = filtered_formant_synthesis * envelope * tremolo;
