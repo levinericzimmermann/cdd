@@ -21,6 +21,16 @@ setuptools.setup(
     ],
     setup_requires=[],
     install_requires=[
+        # explicit  definition to avoid buildout having
+        # version conflicts
+        "numpy==1.22",
+        # to fetch soundfile information (overkill, I admit)
+        "pyo==1.0.4",
+        # to split soundfiles
+        "SoundFile>=0.10.3.post1",
+        # to analyse soundfiles
+        "librosa==0.9.2",
+        # mutwo libs
         "mutwo.ext-core>=0.59.0, <0.60.0",
         "mutwo.ext-music>=0.16.0, <0.17.0",
         "mutwo.ext-midi>=0.7.0, <0.8.0",

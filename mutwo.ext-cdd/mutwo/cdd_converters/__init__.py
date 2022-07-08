@@ -2,7 +2,10 @@ from .abjad import *
 from .chapters import *
 from .ebooks import *
 from .lyrics import *
-from .csound import *
 from .tabulaturas import *
 from .instruments import *
 from .mbrola import *
+from .pannings import *
+from .sound_files import *
+from .bells_31 import *
+from .csound import *

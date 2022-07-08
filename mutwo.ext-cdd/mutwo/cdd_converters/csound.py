@@ -14,6 +14,7 @@ __all__ = (
     "EventToSafeSynthesis",
     "EventToSafeSpeakingSynthesis",
     "EventToSafeSingingSynthesis",
+    "MonoBellCsoundSimultaneousEventToBellSoundFile",
 )
 
 
@@ -319,3 +320,34 @@ endin
 
     def convert(self, event_to_convert: core_events.abc.Event, *args, **kwargs):
         return super().convert(event_to_convert, *args, **kwargs)
+
+
+class MonoBellCsoundSimultaneousEventToBellSoundFile(
+    csound_converters.EventToSoundFile
+):
+    def __init__(self):
+        super().__init__(
+            "etc/csound/31_bells.orc",
+            csound_converters.EventToCsoundScore(
+                p3=lambda event: event.duration + 11,
+                p4=lambda event: event.sample_path,
+                p5=lambda event: event.pitch_factor,
+                p6=lambda event: event.amplitude,
+                p7=lambda event: event.channel_index,
+                # Panning start
+                p8=lambda event: event.panning_start[0],
+                p9=lambda event: event.panning_start[1],
+                p10=lambda event: event.panning_start[2],
+                p11=lambda event: event.panning_start[3],
+                p12=lambda event: event.panning_start[4],
+                # Panning end
+                p13=lambda event: event.panning_end[0],
+                p14=lambda event: event.panning_end[1],
+                p15=lambda event: event.panning_end[2],
+                p16=lambda event: event.panning_end[3],
+                p17=lambda event: event.panning_end[4],
+                # Distance
+                p18=lambda event: event.filter_frequency,
+                p19=lambda event: event.convolution_reverb_mix,
+            ),
+        )

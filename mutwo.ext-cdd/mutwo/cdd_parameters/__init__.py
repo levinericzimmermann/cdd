@@ -2,6 +2,8 @@ from .lyrics import *
 from .notation_indicators import *
 from .playing_indicators import *
 from .abjad_attachments import *
+from .sound_files import *
+from .pannings import *
 
 # set mutwo default values
 
