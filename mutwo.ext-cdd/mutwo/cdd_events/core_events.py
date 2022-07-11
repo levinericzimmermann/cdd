@@ -9,6 +9,10 @@ from mutwo import core_events
 from mutwo import core_utilities
 
 
+# Default value is too high, we still have rounding errors
+core_events.configurations.ROUND_DURATION_TO_N_DIGITS = 7
+
+
 def ComplexEvent_get_event_iterator_by(
     self, **parameter_to_value
 ) -> typing.Iterator[core_events.abc.Event]:

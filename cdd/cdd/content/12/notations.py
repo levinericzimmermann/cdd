@@ -749,18 +749,24 @@ def process_espressivo(abjad_voice: abjad.Voice):
         abjad.attach(abjad.StartHairpin(">"), center_leaf)
 
 
-def _notate_sustaining_instrument(chapter: cdd.chapters.Chapter, instrument_name: str):
+def _notate_sustaining_instrument(
+    chapter: cdd.chapters.Chapter,
+    instrument_name: str,
+    post_process_abjad_score_list: typing.Callable = lambda _: _,
+):
     notation_file_path = chapter.get_notation_path(instrument_name)
     lilypond_file_path = f"{notation_file_path}_lilypond.pdf"
     sustaining_instrument_data_to_abjad_score = SustainingInstrumentDataToAbjadScore()
-    abjad_score_list = [
-        sustaining_instrument_data_to_abjad_score(
-            sustaining_instrument_data, instrument_name
-        )
-        for sustaining_instrument_data in chapter.sustaining_instrument_dict[
-            instrument_name
+    abjad_score_list = post_process_abjad_score_list(
+        [
+            sustaining_instrument_data_to_abjad_score(
+                sustaining_instrument_data, instrument_name
+            )
+            for sustaining_instrument_data in chapter.sustaining_instrument_dict[
+                instrument_name
+            ]
         ]
-    ]
+    )
     abjad_score_list_to_lilypond_file = SustainingInstrumentScoreListToLilyPondFile()
 
     lilypond_file_path_list = []
@@ -791,11 +797,37 @@ def _notate_sustaining_instrument(chapter: cdd.chapters.Chapter, instrument_name
 
 
 def notate_soprano(chapter: cdd.chapters.Chapter):
-    _notate_sustaining_instrument(chapter, cdd.constants.SOPRANO)
+    def post_process_time_bracket_1(abjad_score: abjad.Score):
+        voice = abjad_score[0][0]
+        bar_0 = voice[0]
+        cdd.utilities.add_slur_to_grace_note(bar_0[0])
+
+    def post_process_abjad_score_list(
+        abjad_score_list: list[abjad.Score],
+    ) -> list[abjad.Score]:
+        post_process_time_bracket_1(abjad_score_list[1])
+        return abjad_score_list
+
+    _notate_sustaining_instrument(
+        chapter, cdd.constants.SOPRANO, post_process_abjad_score_list
+    )
 
 
 def notate_clarinet(chapter: cdd.chapters.Chapter):
-    _notate_sustaining_instrument(chapter, cdd.constants.CLARINET)
+    def post_process_time_bracket_4(abjad_score: abjad.Score):
+        voice = abjad_score[0][0]
+        bar_0 = voice[0]
+        cdd.utilities.add_slur_to_grace_note(bar_0[0])
+
+    def post_process_abjad_score_list(
+        abjad_score_list: list[abjad.Score],
+    ) -> list[abjad.Score]:
+        post_process_time_bracket_4(abjad_score_list[4])
+        return abjad_score_list
+
+    _notate_sustaining_instrument(
+        chapter, cdd.constants.CLARINET, post_process_abjad_score_list
+    )
 
 
 def notate_clavichord(chapter: cdd.chapters.Chapter):
@@ -867,6 +899,6 @@ def notate_noise(chapter: cdd.chapters.Chapter):
 
 
 def main(chapter: cdd.chapters.Chapter):
-    # notate_soprano(chapter)
-    # notate_clarinet(chapter)
-    notate_clavichord(chapter)
+    notate_soprano(chapter)
+    notate_clarinet(chapter)
+    # notate_clavichord(chapter)

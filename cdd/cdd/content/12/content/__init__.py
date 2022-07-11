@@ -44,6 +44,7 @@ arrow = next tone follows immediately.
     instrument_name_to_instruction_text = {
         "soprano": rf"""{instruction_text_sustaining_instrument} only sing vowels (pass parenthesized letters).
 if a note has multiple vowels: interpolate between them over the course of the given tone.
+if al niente: start or end tone with closed mouth.
 """,
         "clarinet": instruction_text_sustaining_instrument,
         "clavichord": instruction_text,

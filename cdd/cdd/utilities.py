@@ -195,3 +195,9 @@ def interlock_long_and_short(
                 del item_list[index]
     assert len(solution) == len(item_tuple)
     return tuple(solution)
+
+
+def add_slur_to_grace_note(leaf: abjad.Leaf, grace_note_index: int = 0):
+    before_grace_container = abjad.get.before_grace_container(leaf)
+    abjad.attach(abjad.StartPhrasingSlur(), before_grace_container[grace_note_index])
+    abjad.attach(abjad.StopPhrasingSlur(), leaf)

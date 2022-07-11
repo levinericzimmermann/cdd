@@ -70,6 +70,12 @@ class SoundFile(object):
         return array
 
     @functools.cached_property
+    def mono_array(self) -> np.array:
+        array, sampling_rate = librosa.load(self.path, sr=self.sampling_rate)
+        assert self.sampling_rate == sampling_rate
+        return array
+
+    @functools.cached_property
     def spectrogram_magnitude(self) -> np.ndarray:
         spectrogram_magnitude, _ = librosa.magphase(librosa.stft(self.array))
         return spectrogram_magnitude

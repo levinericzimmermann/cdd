@@ -14,6 +14,18 @@ class Panning(tuple[float]):
     def channel_count(self) -> int:
         return len(self)
 
+    @functools.cached_property
+    def active_panning_index_tuple(self) -> tuple[int, ...]:
+        return tuple(index for index, value in enumerate(self) if value > 0)
+
+    @functools.cached_property
+    def active_panning_value_tuple(self) -> tuple[float, ...]:
+        return tuple(self[index] for index in self.active_panning_index_tuple)
+
+    @functools.cached_property
+    def active_channel_count(self) -> int:
+        return len(self.active_panning_index_tuple)
+
     def normalize(self) -> Panning:
         return type(self)(core_utilities.scale_sequence_to_sum(self, 1))
 

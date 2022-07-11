@@ -1,0 +1,120 @@
+{% macro make_instrument(instrument_index, partial_count, aliasing_border, channel_count) %}
+
+{% set gate_value_list = [] %}
+
+{% for index in range(partial_count + 6) %}
+    {{- gate_value_list.append(index / partial_count) or "" -}}
+{% endfor %}
+
+instr {{ instrument_index }}
+    iDuration = p3
+    iFrequency = p4
+    iAmplitude = p5
+    iBandwidthStart = p6
+    iBandwidthEnd = p7
+
+    iChannelCount = {{ channel_count }}
+
+    iInterpolationDuration = iDuration
+
+    iFilterLayerCount = p18
+
+    kTableIndex phasor 1 / iDuration
+
+    {% for channel_index in range(channel_count) %}
+
+        iSpectralCentroidTableIndex{{ channel_index }} = p{{ 19 + channel_index }}
+        kSpectralCentroidValue{{ channel_index }} tablei kTableIndex, iSpectralCentroidTableIndex{{ channel_index }}, 1
+        kSpectralCentroidValueClipped{{ channel_index }} min kSpectralCentroidValue{{ channel_index }}, 1
+
+        iSpectralContrastTableIndex{{ channel_index }} = p{{ 19 + channel_index + channel_count }}
+        kSpectralContrastValue{{ channel_index }} tablei kTableIndex, iSpectralContrastTableIndex{{ channel_index }}, 1
+
+    {% endfor %}
+
+    ;; printk 0.15, kSpectralCentroidValue0
+
+    aBalancedFieldRecordingWithFilter[] init iChannelCount
+
+    iStartPercentage random 0.3, 0.4
+    iEndPercentage random 0.2, 0.5
+    iCenterPercentage = 1 - iStartPercentage - iEndPercentage
+    kEnvelope linseg 0, iDuration * iStartPercentage, 1, iDuration * iCenterPercentage, 1, iDuration * iEndPercentage, 0
+    kBandwidth expseg iBandwidthStart, iDuration, iBandwidthEnd
+
+    aSineTone poscil 0.2, 400
+    aSineToneWithEnvelope = aSineTone * kEnvelope
+
+    {% for channel_index in range(channel_count) %}
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; CHANNEL {{ channel_index }}                       ;;;;
+
+        iPanningStart{{ channel_index }} = p{{ 8 + channel_index }}
+        iPanningEnd{{ channel_index }}   = p{{ 8 + channel_count + channel_index }}
+
+        ;; print iPanningStart{{ channel_index }}
+        ;; print iPanningEnd{{ channel_index }}
+
+        kAmplitudeLinseg{{ channel_index }} linseg iPanningStart{{ channel_index }}, iInterpolationDuration, iPanningEnd{{ channel_index }}
+        aFieldRecordingWithAppliedAmplitude{{ channel_index }} = kAmplitudeLinseg{{ channel_index }} * gaFieldRecording{{ channel_index }}
+
+        iSwitchOctaveDecision{{ channel_index }} random 0, 1
+
+        if iSwitchOctaveDecision{{ channel_index }} > 0.8 then
+            iFrequency{{ channel_index }} = iFrequency * 2
+        elseif iSwitchOctaveDecision{{ channel_index }} > 0.685 then
+            iFrequency{{ channel_index }} = iFrequency * 0.5
+        else
+            iFrequency{{ channel_index }} = iFrequency
+        endif
+
+
+        aSineTone{{ channel_index }} = aSineToneWithEnvelope * kAmplitudeLinseg{{ channel_index }}
+
+        {% for partial_index in range(partial_count) %}
+
+            ;; PARTIAL {{ partial_index + 1 }} ;;;;;;;;;;;
+
+            kAmp{{ channel_index }}{{ partial_index }} = (1 - {{ gate_value_list[partial_index] }}) + (kSpectralCentroidValueClipped{{ channel_index }} * {{ gate_value_list[partial_index] }})
+            kAmp{{ channel_index }}{{ partial_index }}Minima min kAmp{{ channel_index }}{{ partial_index }}, 1
+            kAmpWithPortamento{{ channel_index }}{{ partial_index }} port kAmp{{ channel_index }}{{ partial_index }}Minima, 0.1
+            aAmpWithPortamento{{ channel_index }}{{ partial_index }} interp kAmpWithPortamento{{ channel_index }}{{ partial_index }}
+            ;; kAmpWithPortamento{{ channel_index }}{{ partial_index }} = 0.5
+
+            iFrequency{{ channel_index }}{{ partial_index }} = iFrequency{{ channel_index }} * {{ partial_index + 1 }}
+
+            ;; Avoid aliasing!
+            if iFrequency{{ channel_index }}{{ partial_index }} > {{ aliasing_border }} then
+                iAliasingProtection{{ channel_index }}{{ partial_index }} = 0
+            else
+                iAliasingProtection{{ channel_index }}{{ partial_index }} = 1
+            endif
+
+            kBandwidth{{ channel_index }}{{ partial_index }} = (kBandwidth * kSpectralContrastValue{{ channel_index }}) / {{ (partial_index * 0.35) + 1 }}
+            aResonator{{ channel_index }}{{ partial_index }} resonx gaFieldRecording{{ channel_index }}, iFrequency{{ channel_index }}{{ partial_index }}, kBandwidth{{ channel_index }}{{ partial_index }}, iFilterLayerCount
+
+            aResonatorWithEnvelope{{ channel_index }}{{ partial_index }} = aResonator{{ channel_index }}{{ partial_index }} * kAmplitudeLinseg{{ channel_index }} * iAliasingProtection{{ channel_index }}{{ partial_index }}
+            aResonatorWithEnvelopeAndGate{{ channel_index }}{{ partial_index }} = aResonatorWithEnvelope{{ channel_index }}{{ partial_index }} * kAmp{{ channel_index }}{{ partial_index }}
+            aFineTunedResonator{{ channel_index }}{{ partial_index }} = (aResonatorWithEnvelopeAndGate{{ channel_index }}{{ partial_index }} * aResonator{{ channel_index }}{{ partial_index }}) / {{ (partial_index * 0.75) + 1 }}
+
+            ;; END PARTIAL {{ partial_index + 1 }} ;;;;;;;
+
+        {% endfor %}
+
+
+        aFieldRecordingWithFilter{{ channel_index }} = ({% for partial_index in range(partial_count) %}aFineTunedResonator{{ channel_index }}{{ partial_index }} {% if not loop.last %}+{% endif %}{% endfor %})
+
+        aBalancedFieldRecordingWithFilter{{ channel_index }} balance aFieldRecordingWithFilter{{ channel_index }}, aSineTone{{ channel_index }}
+        aBalancedFieldRecordingWithFilterAndClip{{ channel_index }} clip aBalancedFieldRecordingWithFilter{{ channel_index }}, 0, 0.5
+
+
+    ;;; END CHANNEL {{ channel_index }}                   ;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    {% endfor %}
+
+    out {% for channel_index in range(channel_count) %}aBalancedFieldRecordingWithFilter{{ channel_index }} * iAmplitude * kEnvelope{% if not loop.last %}, {% endif %}{% endfor %}
+endin
+
+{% endmacro %}

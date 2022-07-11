@@ -4,11 +4,12 @@ import operator
 import tempfile
 import typing
 
-from librosa import feature, onset
+import librosa
 import numpy as np
 import soundfile
 
 from mutwo import cdd_parameters
+from mutwo import cdd_utilities
 from mutwo import core_converters
 from mutwo import core_events
 from mutwo import core_utilities
@@ -22,6 +23,7 @@ __all__ = (
     "SoundFileToSpectralContrastEnvelope",
     "SoundFileToAttackSequentialEvent",
     "SoundFileToDynamicAttackSequentialEvent",
+    "SoundFileToPulse",
 )
 
 
@@ -53,9 +55,10 @@ class SoundFileToMonoSoundFileContainer(core_converters.abc.Converter):
 
 
 class SoundFileToAnalysisEnvelope(core_converters.abc.Converter):
-    def __init__(self, window_size: int = 512, **kwargs):
+    def __init__(self, window_size: int = 512, cleanup_factor: float = 2.5, **kwargs):
         self._window_size = window_size
         self._kwargs = kwargs
+        self._cleanup_factor = cleanup_factor
 
     @abc.abstractmethod
     def _sound_file_to_data_array(
@@ -72,7 +75,10 @@ class SoundFileToAnalysisEnvelope(core_converters.abc.Converter):
         value_tuple = tuple(
             map(
                 float,
-                self._sound_file_to_data_array(sound_file_to_convert)[0],
+                cdd_utilities.reject_outliers(
+                    self._sound_file_to_data_array(sound_file_to_convert),
+                    self._cleanup_factor,
+                )[0],
             )
         )
         window_duration = self._window_size / sound_file_to_convert.sampling_rate
@@ -94,7 +100,7 @@ class SoundFileToRMSEnvelope(SoundFileToAnalysisEnvelope):
     def _sound_file_to_data_array(
         self, sound_file_to_convert: cdd_parameters.SoundFile
     ) -> np.ndarray:
-        return feature.rms(
+        return librosa.feature.rms(
             S=sound_file_to_convert.spectrogram_magnitude,
             hop_length=self._window_size,
             **self._kwargs,
@@ -105,8 +111,8 @@ class SoundFileToSpectralFlatnessEnvelope(SoundFileToAnalysisEnvelope):
     def _sound_file_to_data_array(
         self, sound_file_to_convert: cdd_parameters.SoundFile
     ) -> np.ndarray:
-        return feature.spectral_flatness(
-            y=sound_file_to_convert.array,
+        return librosa.feature.spectral_flatness(
+            y=sound_file_to_convert.mono_array,
             S=sound_file_to_convert.spectrogram_magnitude,
             hop_length=self._window_size,
             **self._kwargs,
@@ -117,8 +123,8 @@ class SoundFileToSpectralCentroidEnvelope(SoundFileToAnalysisEnvelope):
     def _sound_file_to_data_array(
         self, sound_file_to_convert: cdd_parameters.SoundFile
     ) -> np.ndarray:
-        return feature.spectral_centroid(
-            y=sound_file_to_convert.array,
+        return librosa.feature.spectral_centroid(
+            y=sound_file_to_convert.mono_array,
             S=sound_file_to_convert.spectrogram_magnitude,
             hop_length=self._window_size,
             **self._kwargs,
@@ -129,8 +135,8 @@ class SoundFileToSpectralContrastEnvelope(SoundFileToAnalysisEnvelope):
     def _sound_file_to_data_array(
         self, sound_file_to_convert: cdd_parameters.SoundFile
     ) -> np.ndarray:
-        return feature.spectral_contrast(
-            y=sound_file_to_convert.array,
+        return librosa.feature.spectral_contrast(
+            y=sound_file_to_convert.mono_array,
             S=sound_file_to_convert.spectrogram_magnitude,
             hop_length=self._window_size,
             **self._kwargs,
@@ -147,8 +153,8 @@ class SoundFileToAttackSequentialEvent(core_converters.abc.Converter):
         absolute_time_list = list(
             map(
                 float,
-                onset.onset_detect(
-                    y=sound_file_to_convert.array,
+                librosa.onset.onset_detect(
+                    y=sound_file_to_convert.mono_array,
                     sr=sound_file_to_convert.sampling_rate,
                     units="time",
                     **self._kwargs,
@@ -242,3 +248,44 @@ class SoundFileToDynamicAttackSequentialEvent(core_converters.abc.Converter):
                 attack_sequential_event.squash_in(absolute_time, simple_event)
 
         return attack_sequential_event
+
+
+class SoundFileToPulse(core_converters.abc.Converter):
+    def convert(
+        self, sound_file_to_convert: cdd_parameters.SoundFile
+    ) -> core_events.SequentialEvent[core_events.SimpleEvent]:
+        hop_length = 512
+        pulse_array = librosa.beat.plp(
+            y=sound_file_to_convert.mono_array,
+            sr=sound_file_to_convert.sampling_rate,
+            hop_length=hop_length,
+        )
+        is_local_maxima_array = librosa.util.localmax(pulse_array)
+
+        absolute_time_list, onset_strength_list = [], []
+        for frame_index, is_local_maxima in enumerate(is_local_maxima_array):
+            if is_local_maxima:
+                absolute_time = frame_index * (
+                    hop_length / sound_file_to_convert.sampling_rate
+                )
+                absolute_time_list.append(absolute_time)
+                onset_strength_list.append(pulse_array[frame_index])
+
+        if 0 not in absolute_time_list:
+            absolute_time_list.insert(0, 0)
+            onset_strength_list.insert(0, 0)
+
+        sequential_event = core_events.SequentialEvent([])
+        for absolute_time0, absolute_time1, onset_strength in zip(
+            absolute_time_list,
+            absolute_time_list[1:] + [sound_file_to_convert.duration_in_seconds],
+            onset_strength_list,
+        ):
+            duration = absolute_time1 - absolute_time0
+            sequential_event.append(
+                core_events.SimpleEvent(duration).set_parameter(
+                    "onset_strength", onset_strength
+                )
+            )
+
+        return sequential_event

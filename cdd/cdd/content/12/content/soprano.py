@@ -60,6 +60,16 @@ def post_process_time_bracket_4(soprano_time_bracket):
         sequential_event[index].playing_indicator_collection.hairpin.symbol = None
 
 
+def post_process_time_bracket_6(soprano_time_bracket):
+    sequential_event = soprano_time_bracket[2]
+    note_like = sequential_event[0]
+    print(note_like.notation_indicator_collection.markup.content)
+    note_like.notation_indicator_collection.markup.content = (
+        r"\small { place hands over mouth (use hands as mute) }"
+    )
+    note_like.notation_indicator_collection.markup.direction = 'up'
+
+
 def post_process_time_bracket_12(soprano_time_bracket):
     pass
     # sequential_event = soprano_time_bracket[2]
@@ -71,3 +81,4 @@ def post_process(soprano_time_bracket_tuple: tuple):
     post_process_time_bracket_1(soprano_time_bracket_tuple[1])
     post_process_time_bracket_3(soprano_time_bracket_tuple[3])
     post_process_time_bracket_12(soprano_time_bracket_tuple[12])
+    post_process_time_bracket_6(soprano_time_bracket_tuple[6])

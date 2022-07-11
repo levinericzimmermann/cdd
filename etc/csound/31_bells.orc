@@ -11,6 +11,8 @@ instr 1
     iFilterFrequency = p18
     iConvolutionReverbMix = p19
 
+    iFileDuration filelen iSamplePath
+
     iChannelCount = 5
 
     iPanningStartArray[] init iChannelCount
@@ -22,50 +24,42 @@ instr 1
     aBellSampleArray[] diskin iSamplePath, iPitchFactor
 
     aBellSample = aBellSampleArray[iChannelIndex]
-    aBellSampleFiltered lowpass2 aBellSample, iFilterFrequency, 100
+    aBellSampleFiltered lowpass2 aBellSample, iFilterFrequency, 60
     aBellSampleBalanced balance aBellSampleFiltered, aBellSample
-    aBellSampleAdjusted = aBellSampleFiltered * iAmplitude
+    aBellSampleAdjusted = aBellSampleBalanced * iAmplitude
 
     kAmplitudeLinsegArray[] init iChannelCount
     aOutputSignalArray[] init iChannelCount
 
-    kAmplitudeLinsegArray[0] linseg iPanningStartArray[0], iDuration, iPanningEndArray[0]
-    kAmplitudeLinsegArray[1] linseg iPanningStartArray[1], iDuration, iPanningEndArray[1]
-    kAmplitudeLinsegArray[2] linseg iPanningStartArray[2], iDuration, iPanningEndArray[2]
-    kAmplitudeLinsegArray[3] linseg iPanningStartArray[3], iDuration, iPanningEndArray[3]
-    kAmplitudeLinsegArray[4] linseg iPanningStartArray[4], iDuration, iPanningEndArray[4]
+    iInterpolationDuration random 0.3, 0.7
 
-    kCount = 0
+    kAmplitudeLinsegArray[0] linseg iPanningStartArray[0], iInterpolationDuration, iPanningEndArray[0]
+    kAmplitudeLinsegArray[1] linseg iPanningStartArray[1], iInterpolationDuration, iPanningEndArray[1]
+    kAmplitudeLinsegArray[2] linseg iPanningStartArray[2], iInterpolationDuration, iPanningEndArray[2]
+    kAmplitudeLinsegArray[3] linseg iPanningStartArray[3], iInterpolationDuration, iPanningEndArray[3]
+    kAmplitudeLinsegArray[4] linseg iPanningStartArray[4], iInterpolationDuration, iPanningEndArray[4]
 
-    until kCount == iChannelCount do
-        aOutputSignalArray[kCount] = kAmplitudeLinsegArray[kCount] * aBellSampleAdjusted
-        kCount = kCount + 1
-    od
-
+    aOutputSignalArray[0] = kAmplitudeLinsegArray[0] * aBellSampleAdjusted
+    aOutputSignalArray[1] = kAmplitudeLinsegArray[1] * aBellSampleAdjusted
+    aOutputSignalArray[2] = kAmplitudeLinsegArray[2] * aBellSampleAdjusted
+    aOutputSignalArray[3] = kAmplitudeLinsegArray[3] * aBellSampleAdjusted
+    aOutputSignalArray[4] = kAmplitudeLinsegArray[4] * aBellSampleAdjusted
 
     aConvoledSignalArray00 convolve aOutputSignalArray[0], "etc/samples/impulse_responses/hm_williams-01.cv"
     aConvoledSignalArray01 convolve aOutputSignalArray[1], "etc/samples/impulse_responses/hm_williams-01.cv"
-    aConvoledSignalArray02 convolve aOutputSignalArray[2], "etc/samples/impulse_responses/hm_williams-01.cv"
     aConvoledSignalArray03 convolve aOutputSignalArray[3], "etc/samples/impulse_responses/hm_williams-01.cv"
-    aConvoledSignalArray04 convolve aOutputSignalArray[4], "etc/samples/impulse_responses/hm_williams-01.cv"
 
     aConvoledSignalArray10 convolve aOutputSignalArray[0], "etc/samples/impulse_responses/hm_williams-02.cv"
     aConvoledSignalArray11 convolve aOutputSignalArray[1], "etc/samples/impulse_responses/hm_williams-02.cv"
     aConvoledSignalArray12 convolve aOutputSignalArray[2], "etc/samples/impulse_responses/hm_williams-02.cv"
-    aConvoledSignalArray13 convolve aOutputSignalArray[3], "etc/samples/impulse_responses/hm_williams-02.cv"
-    aConvoledSignalArray14 convolve aOutputSignalArray[4], "etc/samples/impulse_responses/hm_williams-02.cv"
 
-    aConvoledSignalArray20 convolve aOutputSignalArray[0], "etc/samples/impulse_responses/hm_williams-03.cv"
     aConvoledSignalArray21 convolve aOutputSignalArray[1], "etc/samples/impulse_responses/hm_williams-03.cv"
     aConvoledSignalArray22 convolve aOutputSignalArray[2], "etc/samples/impulse_responses/hm_williams-03.cv"
     aConvoledSignalArray23 convolve aOutputSignalArray[3], "etc/samples/impulse_responses/hm_williams-03.cv"
-    aConvoledSignalArray24 convolve aOutputSignalArray[4], "etc/samples/impulse_responses/hm_williams-03.cv"
 
     aConvoledSignalArray30 convolve aOutputSignalArray[0], "etc/samples/impulse_responses/hm_williams-04.cv"
-    aConvoledSignalArray31 convolve aOutputSignalArray[1], "etc/samples/impulse_responses/hm_williams-04.cv"
     aConvoledSignalArray32 convolve aOutputSignalArray[2], "etc/samples/impulse_responses/hm_williams-04.cv"
     aConvoledSignalArray33 convolve aOutputSignalArray[3], "etc/samples/impulse_responses/hm_williams-04.cv"
-    aConvoledSignalArray34 convolve aOutputSignalArray[4], "etc/samples/impulse_responses/hm_williams-04.cv"
 
     aConvoledSignalArray40 convolve aOutputSignalArray[0], "etc/samples/impulse_responses/hm_williams-04.cv"
     aConvoledSignalArray41 convolve aOutputSignalArray[1], "etc/samples/impulse_responses/hm_williams-04.cv"
@@ -73,17 +67,13 @@ instr 1
     aConvoledSignalArray43 convolve aOutputSignalArray[3], "etc/samples/impulse_responses/hm_williams-04.cv"
     aConvoledSignalArray44 convolve aOutputSignalArray[4], "etc/samples/impulse_responses/hm_williams-04.cv"
 
-    aConvoledSignalArray50 convolve aOutputSignalArray[0], "etc/samples/impulse_responses/hm_williams-05.cv"
-    aConvoledSignalArray51 convolve aOutputSignalArray[1], "etc/samples/impulse_responses/hm_williams-05.cv"
-    aConvoledSignalArray52 convolve aOutputSignalArray[2], "etc/samples/impulse_responses/hm_williams-05.cv"
-    aConvoledSignalArray53 convolve aOutputSignalArray[3], "etc/samples/impulse_responses/hm_williams-05.cv"
     aConvoledSignalArray54 convolve aOutputSignalArray[4], "etc/samples/impulse_responses/hm_williams-05.cv"
 
-    aConvoledSignalArray0 = (aConvoledSignalArray00 * 2) + aConvoledSignalArray01 + aConvoledSignalArray02 + aConvoledSignalArray03 + aConvoledSignalArray04 + aConvoledSignalArray50
-    aConvoledSignalArray1 = aConvoledSignalArray10 + (aConvoledSignalArray11 * 2) + aConvoledSignalArray12 + aConvoledSignalArray13 + aConvoledSignalArray14 + aConvoledSignalArray51
-    aConvoledSignalArray2 = aConvoledSignalArray20 + aConvoledSignalArray21 + (aConvoledSignalArray22 * 2) + aConvoledSignalArray23 + aConvoledSignalArray24 + aConvoledSignalArray52
-    aConvoledSignalArray3 = aConvoledSignalArray30 + aConvoledSignalArray31 + aConvoledSignalArray32 + (aConvoledSignalArray33 * 2) + aConvoledSignalArray34 + aConvoledSignalArray53
-    aConvoledSignalArray4 = aConvoledSignalArray40 + aConvoledSignalArray41 + aConvoledSignalArray42 + aConvoledSignalArray43 + (aConvoledSignalArray44 * 2) + aConvoledSignalArray54
+    aConvoledSignalArray0 = (aConvoledSignalArray00 * 2) + aConvoledSignalArray01 + aConvoledSignalArray03
+    aConvoledSignalArray1 = aConvoledSignalArray10 + (aConvoledSignalArray11 * 2) + aConvoledSignalArray12
+    aConvoledSignalArray2 = aConvoledSignalArray21 + (aConvoledSignalArray22 * 2) + aConvoledSignalArray23
+    aConvoledSignalArray3 = aConvoledSignalArray30 + aConvoledSignalArray32 + (aConvoledSignalArray33 * 2)
+    aConvoledSignalArray4 = (aConvoledSignalArray44 * 2) + (aConvoledSignalArray54 * 0.25)
 
     iMix = iConvolutionReverbMix
 

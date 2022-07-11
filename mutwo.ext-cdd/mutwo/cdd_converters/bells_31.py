@@ -4,6 +4,7 @@ import bisect
 import collections
 import copy
 import dataclasses
+import functools
 import itertools
 import os
 
@@ -52,6 +53,12 @@ class Bell(dict[str, BellSampleFamily]):
         self.__name = name
         self.pitch = pitch
         super().__init__(**kwargs)
+
+    def __str__(self) -> str:
+        return f"Bell({self.name})"
+
+    def __repr__(self) -> str:
+        return f"Bell({self.name})"
 
     @property
     def name(self) -> str:
@@ -121,7 +128,21 @@ class BellCollection(tuple[Bell]):
         sample_path = next(champion[bell_sample_family_name]).path
         pitch_factor = pitch_frequency / candidate_frequency
 
+        self.bell_counter[champion] += 1
+
         return (sample_path, pitch_factor)
+
+    @functools.cached_property
+    def pitch_tuple(self) -> tuple[music_parameters.abc.Pitch, ...]:
+        return tuple(bell.pitch for bell in self)
+
+    @functools.cached_property
+    def minima_pitch(self) -> music_parameters.abc.Pitch:
+        return min(self.pitch_tuple)
+
+    @functools.cached_property
+    def maxima_pitch(self) -> music_parameters.abc.Pitch:
+        return max(self.pitch_tuple)
 
 
 class AttackDynamicChoiceAndAttackSequentialEventTupleToBellSequentialEventBlueprint(
@@ -229,10 +250,17 @@ class BellSequentialEventBlueprintToBellSequentialEvent(core_converters.abc.Conv
         distance_tendency: common_generators.Tendency,
         # for each channel one envelope
         rms_envelope_tuple: tuple[core_events.Envelope, ...],
+        panning_to_mutated_panning_dynamic_choice: core_generators.DynamicChoice = core_generators.DynamicChoice(
+            [cdd_converters.PanningToScaledPanning()],
+            [core_events.Envelope([[0, 1], [1, 1]])],
+        ),
     ):
         self.pitch_dynamic_choice = pitch_dynamic_choice
         self.distance_tendency = distance_tendency
         self.rms_envelope_tuple = rms_envelope_tuple
+        self.panning_to_mutated_panning_dynamic_choice = (
+            panning_to_mutated_panning_dynamic_choice
+        )
 
     def convert(
         self,
@@ -254,19 +282,28 @@ class BellSequentialEventBlueprintToBellSequentialEvent(core_converters.abc.Conv
                 simple_event.distance = self.distance_tendency.value_at(
                     absolute_position
                 )
+                simple_event.panning_end = (
+                    self.panning_to_mutated_panning_dynamic_choice.gamble_at(
+                        absolute_position
+                    ).convert(simple_event.panning_end)
+                )
                 simple_event.volume = music_parameters.DirectVolume(
-                    (
-                        sum(
-                            rms_envelope.value_at(absolute_time) * channel_strength
-                            if channel_strength
-                            else 0
-                            for rms_envelope, channel_strength in zip(
-                                self.rms_envelope_tuple, simple_event.panning_start
+                    # Hard clipping to 0.5
+                    max(
+                        (
+                            sum(
+                                rms_envelope.value_at(absolute_time) * channel_strength
+                                if channel_strength
+                                else 0
+                                for rms_envelope, channel_strength in zip(
+                                    self.rms_envelope_tuple, simple_event.panning_start
+                                )
                             )
+                            / len(simple_event.panning_start)
                         )
-                        / len(simple_event.panning_start)
+                        * 8,
+                        0.5,
                     )
-                    * 10
                 )
 
         return bell_sequential_event
@@ -290,7 +327,7 @@ class BellSequentialEventToBellCsoundSequentialEvent(
         self, distance: float, pitch: music_parameters.abc.Pitch
     ) -> float:
         frequency = pitch.frequency
-        partial_index = core_utilities.scale(distance, 0, 1, 42, 2)
+        partial_index = core_utilities.scale(distance, 0, 1, 35, 1.75, -2)
         return frequency * partial_index
 
     def _convert_simple_event(
@@ -312,14 +349,14 @@ class BellSequentialEventToBellCsoundSequentialEvent(
                 pitch_factor=pitch_factor,
                 amplitude=music_parameters.DecibelVolume(
                     event_to_convert.volume.decibel
-                    + core_utilities.scale(event_to_convert.distance, 0, 1, 0, -12)
+                    + core_utilities.scale(event_to_convert.distance, 0, 1, 0, -10)
                 ).amplitude,
                 duration=event_to_convert.duration,
                 panning_start=event_to_convert.panning_start,
                 panning_end=event_to_convert.panning_end,
                 filter_frequency=filter_frequency,
                 convolution_reverb_mix=core_utilities.scale(
-                    event_to_convert.distance, 0, 1, 0.1, 0.85
+                    event_to_convert.distance, 0, 1, 0.015, 0.4
                 ),
             )
         else:

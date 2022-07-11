@@ -1,0 +1,61 @@
+{% from 'etc/csound/31_resonator_instrument.j2' import make_instrument %}
+
+{% set channel_count = 5 %}
+{% set sampling_rate = 44100 %}
+{% set control_rate = sampling_rate %}
+{% set aliasing_border = sampling_rate / 2 %}
+
+
+0dbfs = 1
+nchnls = 5
+sr = {{ sampling_rate }}
+kr = {{ control_rate }}
+
+; global field recording player
+instr 1
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; START DUMMY P-FIELDS FOR COMPATIBILITY WITH INSTRUMENT 2 ;
+
+    iDuration = p3
+    iFrequency = p4
+    iAmplitude = p5
+    iBandwidthStart = p6
+    iBandwidthEnd = p7
+
+    iChannelCount = {{ channel_count }}
+
+    iPanningStartArray[] init iChannelCount
+    iPanningEndArray[] init iChannelCount
+
+    iPanningStartArray fillarray p8, p9, p10, p11, p12
+    iPanningEndArray fillarray p13, p14, p15, p16, p17
+
+    iFilterLayerCount = p18
+
+    {% for channel_index in range(channel_count) %}
+
+        iSpectralCentroidTableIndex{{ channel_index }} = p{{ 19 + channel_index }}
+        iSpectralContrastTableIndex{{ channel_index }} = p{{ 19 + channel_index + channel_count }}
+
+    {% endfor %}
+
+
+    ; END DUMMY P-FIELDS FOR COMPATIBILITY WITH INSTRUMENT 2 ;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    iPitchFactor = 1
+
+    aFieldRecordingArray[] diskin "cdd/data/31/field_recording_5_channel.wav", iPitchFactor
+
+    {% for channel_index in range(channel_count) %}
+
+        gaFieldRecording{{ channel_index }} = aFieldRecordingArray[{{ channel_index }}]
+
+    {% endfor %}
+endin
+
+{% for partial_count in range(32) %}
+
+{{ make_instrument(partial_count + 2, partial_count + 1, aliasing_border, channel_count) }}
+
+{% endfor %}

@@ -8,4 +8,5 @@ from .mbrola import *
 from .pannings import *
 from .sound_files import *
 from .bells_31 import *
+from .resonators_31 import *
 from .csound import *

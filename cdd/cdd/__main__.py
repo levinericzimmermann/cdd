@@ -19,8 +19,10 @@ def chapter_name_to_chapter(chapter_name: str) -> typing.Optional[cdd.chapters.C
 def render(render_method_list):
     for chapter_to_render_name in cdd.configurations.CHAPTER_TO_RENDER_TUPLE:
         chapter = chapter_name_to_chapter(chapter_to_render_name)
+        print('chapter_to_render_name:', chapter_to_render_name)
         if chapter:
             for render_method in render_method_list:
+                print(render_method)
                 getattr(chapter, render_method)()
 
 
@@ -57,6 +59,8 @@ def main():
 
     logging.root.setLevel(logging.DEBUG)
     render_method_list = cdd.configurations.RENDER_METHOD_LIST
+
+    print("START CDD MAIN")
 
     if len(render_method_list) == 2:
         warnings.warn(

@@ -8,3 +8,5 @@ from . import chapters
 from . import utilities
 
 from . import content
+
+from . import __main__

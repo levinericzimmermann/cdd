@@ -2,20 +2,76 @@ import os
 import typing
 import uuid
 
+import jinja2
+
+from mutwo import cdd_events
+from mutwo import cdd_parameters
 from mutwo import core_converters
 from mutwo import core_constants
 from mutwo import core_events
+from mutwo import core_utilities
 from mutwo import csound_converters
 from mutwo import isis_converters
 from mutwo import mbrola_converters
 
 
 __all__ = (
+    "EnvelopeToFunctionTable",
+    "EventToCsoundScoreWithFunctionTables",
     "EventToSafeSynthesis",
     "EventToSafeSpeakingSynthesis",
     "EventToSafeSingingSynthesis",
     "MonoBellCsoundSimultaneousEventToBellSoundFile",
+    "ResonatorSequentialEventToResonatorSoundFile",
 )
+
+
+# MONKEY PATCH: Allow csound converter to parse jinja2 files
+def EventToSoundFile_convert(
+    self,
+    event_to_convert: core_events.abc.Event,
+    path: str,
+    score_path: typing.Optional[str] = None,
+) -> None:
+    """Render sound file from the mutwo event.
+
+    :param event_to_convert: The event that shall be rendered.
+    :type event_to_convert: core_events.abc.Event
+    :param path: where to write the sound file
+    :type path: str
+    :param score_path: where to write the score file
+    :type score_path: typing.Optional[str]
+    """
+
+    environment = jinja2.Environment(loader=jinja2.FileSystemLoader("./"))
+    template = environment.get_template(self.csound_orchestra_path)
+    csound_orchestra_str = template.render()
+    split_csound_orchestra_path = self.csound_orchestra_path.split("/")
+    csound_orchestra_directory_path, csound_orchestra_file_path = (
+        "/".join(split_csound_orchestra_path[:-1]),
+        split_csound_orchestra_path[-1],
+    )
+    if not csound_orchestra_directory_path:
+        csound_orchestra_directory_path = "."
+    csound_orchestra_path = f"{csound_orchestra_directory_path}/.{csound_orchestra_file_path.split('.')[0]}.orc"
+
+    with open(csound_orchestra_path, "w") as csound_orchestra_file:
+        csound_orchestra_file.write(csound_orchestra_str)
+
+    if not score_path:
+        score_path = path + ".sco"
+
+    self.csound_score_converter.convert(event_to_convert, score_path)
+    flag_string = " ".join(self.flags)
+    command = f"csound -o {path} {flag_string}" f" {csound_orchestra_path} {score_path}"
+
+    os.system(command)
+
+    if self.remove_score_file:
+        os.remove(score_path)
+
+
+csound_converters.EventToSoundFile.convert = EventToSoundFile_convert
 
 
 class EventToSafeSynthesis(csound_converters.EventToSoundFile):
@@ -351,3 +407,159 @@ class MonoBellCsoundSimultaneousEventToBellSoundFile(
                 p19=lambda event: event.convolution_reverb_mix,
             ),
         )
+
+
+class EnvelopeToFunctionTable(core_converters.abc.Converter):
+    def __init__(self, gen_routine_index: int = 7):
+        self._gen_routine_index = gen_routine_index
+
+    def convert(
+        self, envelope_to_convert: core_events.Envelope, function_table_index: int
+    ) -> str:
+        envelope_duration = envelope_to_convert.duration
+        expected_table_size = 100000
+        table_size = 0
+        # XXX: CSound returns odd error if there are more than x entries
+        #       ftable 17203: gen call has negative segment size:
+        # even though no segment is negative
+        maxima_entry_count = 1000
+        function_table_element_list = []
+        for value, duration in zip(
+            envelope_to_convert.value_tuple,
+            envelope_to_convert.get_parameter("duration"),
+        ):
+            value = str(core_utilities.round_floats(float(value), 8))
+            duration = max(int((duration / envelope_duration) * expected_table_size), 1)
+            table_size += duration
+            if len(function_table_element_list) < maxima_entry_count:
+                function_table_element_list.extend([str(value), str(duration)])
+            else:
+                function_table_element_list[-3] = str(
+                    int(function_table_element_list[-3]) + duration
+                )
+
+        if function_table_element_list:
+            # To have value at the end
+            function_table_element_list.append(function_table_element_list[-2])
+        else:
+            table_size = 10
+            function_table_element_list = f"0.5 {table_size} 0.5".split(" ")
+
+        function_table_element_str = " ".join(function_table_element_list)
+        return f"f {function_table_index} 0 {table_size} {self._gen_routine_index} {function_table_element_str}"
+
+
+class EventToCsoundScoreWithFunctionTables(csound_converters.EventToCsoundScore):
+    def _convert_simple_event(
+        self,
+        simple_event: core_events.SimpleEvent,
+        absolute_entry_delay: core_constants.DurationType,
+    ) -> tuple[str, ...]:
+        for function_table_attribute, envelope_attribute in (
+            (
+                "spectral_centroid_envelope_function_table_index_tuple",
+                "spectral_centroid_envelope_tuple",
+            ),
+            (
+                "spectral_contrast_envelope_function_table_index_tuple",
+                "spectral_contrast_envelope_tuple",
+            ),
+        ):
+            try:
+                function_table_data = zip(
+                    getattr(simple_event, function_table_attribute),
+                    getattr(simple_event, envelope_attribute),
+                )
+            except AttributeError:
+                continue
+            for function_table_index, envelope in function_table_data:
+                if function_table_or_none := EnvelopeToFunctionTable()(
+                    envelope, function_table_index
+                ):
+                    self._function_table_definition_list.append(function_table_or_none)
+
+        return super()._convert_simple_event(simple_event, absolute_entry_delay)
+
+    def convert(self, event_to_convert: core_events.abc.Event, path: str) -> None:
+        self._function_table_definition_list: list[str] = []
+        csound_score_line_tuple = self._convert_event(event_to_convert, 0)
+        csound_score_line_tuple = (
+            tuple(self._function_table_definition_list) + csound_score_line_tuple
+        )
+
+        csound_score_str = "\n".join(csound_score_line_tuple)
+        with open(path, "w") as f:
+            f.write(csound_score_str)
+
+
+class ResonatorSequentialEventToResonatorSoundFile(csound_converters.EventToSoundFile):
+    def __init__(self):
+        super().__init__(
+            "etc/csound/31_resonator.orc.j2",
+            EventToCsoundScoreWithFunctionTables(
+                p1=lambda event: event.instrument,
+                p3=lambda event: float(event.duration),
+                p4=lambda event: event.pitch.frequency,
+                p5=lambda event: event.volume.amplitude,
+                p6=lambda event: event.bandwidth_start,
+                p7=lambda event: event.bandwidth_end,
+                # Panning start
+                p8=lambda event: event.panning_start[0],
+                p9=lambda event: event.panning_start[1],
+                p10=lambda event: event.panning_start[2],
+                p11=lambda event: event.panning_start[3],
+                p12=lambda event: event.panning_start[4],
+                # Panning end
+                p13=lambda event: event.panning_end[0],
+                p14=lambda event: event.panning_end[1],
+                p15=lambda event: event.panning_end[2],
+                p16=lambda event: event.panning_end[3],
+                p17=lambda event: event.panning_end[4],
+                # Other
+                p18=lambda event: event.filter_layer_count,
+                # Spectral centroid function tables
+                p19=lambda event: event.spectral_centroid_envelope_function_table_index_tuple[
+                    0
+                ],
+                p20=lambda event: event.spectral_centroid_envelope_function_table_index_tuple[
+                    1
+                ],
+                p21=lambda event: event.spectral_centroid_envelope_function_table_index_tuple[
+                    2
+                ],
+                p22=lambda event: event.spectral_centroid_envelope_function_table_index_tuple[
+                    3
+                ],
+                p23=lambda event: event.spectral_centroid_envelope_function_table_index_tuple[
+                    4
+                ],
+                # Spectral contrast function tables
+                p24=lambda event: event.spectral_contrast_envelope_function_table_index_tuple[
+                    0
+                ],
+                p25=lambda event: event.spectral_contrast_envelope_function_table_index_tuple[
+                    1
+                ],
+                p26=lambda event: event.spectral_contrast_envelope_function_table_index_tuple[
+                    2
+                ],
+                p27=lambda event: event.spectral_contrast_envelope_function_table_index_tuple[
+                    3
+                ],
+                p28=lambda event: event.spectral_contrast_envelope_function_table_index_tuple[
+                    4
+                ],
+            ),
+        )
+
+    def convert(self, event_to_convert: core_events.abc.Event, *args, **kwargs):
+        field_recording_player_event = cdd_events.ResonatorEvent(
+            duration=event_to_convert.duration + 10,
+            panning_start=cdd_parameters.Panning([0] * 5),
+            panning_end=cdd_parameters.Panning([0] * 5),
+        )
+        field_recording_player_event.instrument = 1
+        new_event = core_events.SimultaneousEvent(
+            [event_to_convert, field_recording_player_event]
+        )
+        return super().convert(new_event, *args, **kwargs)

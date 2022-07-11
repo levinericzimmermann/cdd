@@ -51,6 +51,8 @@ setuptools.setup(
         "pylatex==1.4.1",
         # to write portugese numbers
         "num2words==0.5.10",
+        # To convert csound jinja orchestras
+        "jinja2>=3.1.2, <4.0.0",
     ],
     extras_require=extras_require,
     python_requires=">=3.9, <4",
