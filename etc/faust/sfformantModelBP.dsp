@@ -17,13 +17,17 @@ freq = baseFreq * bend * extra_bend;
 minimalGain = 0.1;
 gain = hslider("gain", 0.25, 0, 1, 0.001);
 
+filter_envelope_duration = hslider("filter_envelope_duration",4.95,0.5,6,0.001);
+tremolo_envelope_duration = hslider("tremolo_envelope_duration",2,0.25,3,0.001);
+extype_envelope_duration = hslider("z_extype_envelope_duration",2,0.05,4,0.001);
+
 envelope = en.adsr(2, 1.5, 0.8, 4, gate);
-filter_envelope = en.adsre(4.95, 1.5, 0.8, 6, gate) + 0.01;
-tremolo_envelope = en.asr(5.86, 1, 2, gate);
+filter_envelope = en.adsre(filter_envelope_duration, 1.5, 0.8, filter_envelope_duration + 1.05, gate) + 0.01;
+tremolo_envelope = en.asr(tremolo_envelope_duration * 2, 1, tremolo_envelope_duration, gate);
 
 tremolo_frequency = ((os.lf_triangle(0.2) + 1) / 2) + 0.85;
 tremolo = (((os.lf_triangle(tremolo_frequency) + 1) / 2) * abs(tremolo_envelope - 1)) + tremolo_envelope;
-extype_envelope = abs(en.asr(2, 1, 2, gate) - 1);
+extype_envelope = abs(en.asr(extype_envelope_duration, 1, extype_envelope_duration, gate) - 1);
 
 extype = extype_envelope + extype_slider;
 
