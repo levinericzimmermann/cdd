@@ -84,6 +84,7 @@ class ResampledEnvelopeTuple(tuple):
         envelope_name: str,
         new_minima: float = 0,
         new_maxima: float = 1,
+        force_to_compute: bool = False,
     ):
         envelope_tuple = core_utilities.compute_lazy(
             f"builds/pickled/31_{envelope_name}_tuple.pickle"
@@ -104,7 +105,8 @@ class ResampledEnvelopeTuple(tuple):
         )
 
         resampled_envelope_tuple = core_utilities.compute_lazy(
-            f"builds/pickled/31_{envelope_name}_tuple_resampled.pickle"
+            f"builds/pickled/31_{envelope_name}_tuple_resampled.pickle",
+            force_to_compute=force_to_compute,
         )(
             lambda _, new_minima, new_maxima: tuple(
                 envelope.set_parameter(

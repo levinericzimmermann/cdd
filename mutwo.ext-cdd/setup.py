@@ -39,6 +39,7 @@ setuptools.setup(
         "mutwo.ext-isis>=0.7.0, <0.8.0",
         "mutwo.ext-csound>=0.4.0, <0.5.0",
         "mutwo.ext-mbrola==0.2.0",
+        "mutwo.ext-reaper==0.2.0",
         # for auto reading pessoa text from ebook
         "EbookLib==0.17.1",  # (this is for loading the html content of epub file)
         "beautifulsoup4==4.10.0",  # (this is to parse the content of the epub file)
@@ -53,6 +54,18 @@ setuptools.setup(
         "num2words==0.5.10",
         # To convert csound jinja orchestras
         "jinja2>=3.1.2, <4.0.0",
+        # To calculate movements in space
+        "geometer==0.3.4",
+        # For audio score commands
+        "gTTS==2.2.4",
+        # to see progress for slow dsp rendering
+        "progressbar2==4.0.0",
+        # to create empty soundfiles
+        "pydub==0.25.1",
+        # to get soundfile duration
+        "sox==1.4.1",
+        # to animate walking player
+        "matplotlib==3.5.1",
     ],
     extras_require=extras_require,
     python_requires=">=3.9, <4",

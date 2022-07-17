@@ -10,3 +10,4 @@ from .sound_files import *
 from .bells_31 import *
 from .resonators_31 import *
 from .csound import *
+from .audio_scores import *

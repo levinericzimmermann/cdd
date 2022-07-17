@@ -6,16 +6,19 @@ from mutwo import core_utilities
 
 
 def main(chapter) -> core_events.SequentialEvent:
-    COMPUTE_ALL = True  # except rms_envelope_tuple
+    COMPUTE_ALL = False  # except rms_envelope_tuple
     COMPUTE_BELL_SEQUENTIAL_EVENT = False
+    COMPUTE_RMS_ENVELOPE = False
 
     attack_dynamic_choice = core_generators.DynamicChoice(
         [0, 1],
         [
             core_events.Envelope(
                 [
-                    [0, 0.3],
-                    [0.2, 0.2],
+                    [0, 0.9],
+                    [0.1, 0.7],
+                    [0.19, 0.3],
+                    [0.2, 0.35],
                     [0.3, 0.2],
                     [0.4, 0.4],
                     [0.45, 0.5],
@@ -187,7 +190,7 @@ def main(chapter) -> core_events.SequentialEvent:
 
     rms_envelope_tuple = core_utilities.compute_lazy(
         "builds/pickled/31_bell_rms_envelope_tuple.pickle",
-        force_to_compute=False,
+        force_to_compute=COMPUTE_RMS_ENVELOPE,
     )(
         lambda: tuple(
             sound_file.rms_envelope

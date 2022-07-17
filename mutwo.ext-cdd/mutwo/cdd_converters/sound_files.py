@@ -24,6 +24,7 @@ __all__ = (
     "SoundFileToAttackSequentialEvent",
     "SoundFileToDynamicAttackSequentialEvent",
     "SoundFileToPulse",
+    "SoundFileToHarmonicAndPercussiveSoundFile",
 )
 
 
@@ -245,7 +246,13 @@ class SoundFileToDynamicAttackSequentialEvent(core_converters.abc.Converter):
                 event_index
             ]
             if simple_event.is_attack:
-                attack_sequential_event.squash_in(absolute_time, simple_event)
+                attack_sequential_event.squash_in(
+                    core_utilities.round_floats(
+                        absolute_time,
+                        core_events.configurations.ROUND_DURATION_TO_N_DIGITS,
+                    ),
+                    simple_event,
+                )
 
         return attack_sequential_event
 
@@ -289,3 +296,32 @@ class SoundFileToPulse(core_converters.abc.Converter):
             )
 
         return sequential_event
+
+
+class SoundFileToHarmonicAndPercussiveSoundFile(core_converters.abc.Converter):
+    def __init__(self, percussive_margin: float = 1, harmonic_margin: float = 1):
+        self._percussive_margin, self._harmonic_margin = (
+            percussive_margin,
+            harmonic_margin,
+        )
+
+    def convert(
+        self,
+        sound_file_to_convert: cdd_parameters.SoundFile,
+        harmonic_sound_file_path: str,
+        percussive_sound_file_path: str,
+    ):
+        for data, path in zip(
+            librosa.effects.hpss(
+                sound_file_to_convert.mono_array,
+                margin=(self._harmonic_margin, self._percussive_margin),
+            ),
+            (harmonic_sound_file_path, percussive_sound_file_path),
+        ):
+            soundfile.write(
+                path,
+                data,
+                sound_file_to_convert.sampling_rate,
+                subtype="PCM_24",
+                format="wav",
+            )

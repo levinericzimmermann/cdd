@@ -1,3 +1,6 @@
+import functools
+import operator
+
 from mutwo import cdd_converters
 from mutwo import cdd_parameters
 from mutwo import music_parameters
@@ -93,3 +96,68 @@ CHAPTER_PART_DATA_TUPLE = (
     (2, 1.75),
     (0, 1.25),
 )
+
+HPSS_MARGIN_MAXIMA = 12
+
+
+# X Length between bell table & tuning fork box
+LONG_LINE_LENGTH = 10
+# Length between tuning fork box corners
+SHORT_LINE_LENGHT = 1
+MIDDLE_LINE_LENGTH = LONG_LINE_LENGTH - SHORT_LINE_LENGHT
+
+# How long it takes to walk one x or y
+WALK_DURATION_FOR_ONE = 0.815  # in seconds
+
+CORNER_ROUTE = cdd_parameters.CircularRoute(
+    [
+        cdd_parameters.Corner(1, 0, 0),
+        cdd_parameters.Corner(2, LONG_LINE_LENGTH, 0),
+        cdd_parameters.Corner(3, LONG_LINE_LENGTH, SHORT_LINE_LENGHT),
+        cdd_parameters.Corner(4, SHORT_LINE_LENGHT, SHORT_LINE_LENGHT),
+        cdd_parameters.Corner(5, SHORT_LINE_LENGHT, LONG_LINE_LENGTH),
+        cdd_parameters.Corner(6, 0, LONG_LINE_LENGTH),
+    ]
+)
+
+MIDWAY_ROUTE = cdd_parameters.CircularRoute(
+    [
+        cdd_parameters.Midway(
+            index + 1, (point0.x + point1.x) / 2, (point0.y + point1.y) / 2
+        )
+        for index, point0, point1 in zip(
+            range(len(CORNER_ROUTE)),
+            CORNER_ROUTE,
+            CORNER_ROUTE[1:] + (CORNER_ROUTE[0],),
+        )
+    ]
+)
+
+CIRCULAR_ROUTE = cdd_parameters.CircularRoute(
+    functools.reduce(operator.add, zip(CORNER_ROUTE, MIDWAY_ROUTE))
+)
+
+DIRECTION_CLOCKWISE = cdd_parameters.Direction(1)
+DIRECTION_COUNTER_CLOCKWISE = cdd_parameters.Direction(-1)
+
+
+BELL_TABLE = cdd_parameters.BellTable(
+    cdd_parameters.Point(
+        (CIRCULAR_ROUTE[0].x + CIRCULAR_ROUTE[6].x) / 2,
+        (CIRCULAR_ROUTE[0].y + CIRCULAR_ROUTE[6].y) / 2,
+    )
+)
+
+POINT_TO_OBJECT = {
+    CIRCULAR_ROUTE[0]: BELL_TABLE,
+    CIRCULAR_ROUTE[3]: cdd_parameters.TuningFork(
+        cdd_parameters.Point(CIRCULAR_ROUTE[3].x + 0.5, CIRCULAR_ROUTE[3].y)
+    ),
+    CIRCULAR_ROUTE[5]: cdd_parameters.Monochord(
+        cdd_parameters.Point(CIRCULAR_ROUTE[5].x, CIRCULAR_ROUTE[5].y - 0.5)
+    ),
+    CIRCULAR_ROUTE[6]: BELL_TABLE,
+    CIRCULAR_ROUTE[9]: cdd_parameters.TuningFork(
+        cdd_parameters.Point(CIRCULAR_ROUTE[9].x, CIRCULAR_ROUTE[9].y + 0.5)
+    ),
+}

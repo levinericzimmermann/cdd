@@ -26,6 +26,7 @@ PATH.BUILDS.SCORES = "scores"
 PATH.BUILDS.MIDI = "midi"
 PATH.BUILDS.SOUND_FILES = "sound_files"
 PATH.BUILDS.PICKLED = "pickled"
+PATH.BUILDS.REAPER = "reaper"
 
 PATH.CDD = "cdd"
 PATH.CDD.DATA = "data"

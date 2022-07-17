@@ -236,16 +236,18 @@ class ChapterPartSequence(core_events.SequentialEvent[ChapterPart]):
 
 class Chapter(cdd.chapters.Chapter):
     from . import constants
-    from . import bells
-    from . import resonators
-    from . import voices
+    # from . import bells
+    # from . import resonators
+    # from . import voices
+    from . import audio_scores
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setup_chapter_part_sequence()
-        self.bell_csound_sequential_event = self.bells.main(self)
-        self.resonator_bandpass_melody_simultaneous_event = self.resonators.main(self)
-        self.voice_simultaneous_event = self.voices.main(self)
+        # self.bell_csound_sequential_event = self.bells.main(self)
+        # self.resonator_bandpass_melody_simultaneous_event = self.resonators.main(self)
+        # self.voice_simultaneous_event = self.voices.main(self)
+        self.command_sequential_event_dict = self.audio_scores.main(self)
 
     def setup_chapter_part_sequence(self):
         pitch_collection_tuple = tuple(

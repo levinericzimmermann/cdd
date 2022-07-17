@@ -8,9 +8,13 @@ from mutwo import core_utilities
 def get_resonator_melody_pair_0(
     chapter,
 ) -> core_events.SimultaneousEvent[core_events.SequentialEvent]:
-    pulse = core_utilities.compute_lazy("builds/pickled/31_sound_file_pulse.pickle")(
-        lambda: cdd_converters.SoundFileToPulse().convert(chapter.constants.SOUND_FILE)
-    )()
+    COMPUTE_ALL = False
+    COMPUTE_SOUND_FILE_PULSE = False or COMPUTE_ALL
+    COMPUTE_ENVELOPE_TUPLE = False or COMPUTE_ALL
+    pulse = core_utilities.compute_lazy(
+        "builds/pickled/31_sound_file_pulse.pickle",
+        force_to_compute=COMPUTE_SOUND_FILE_PULSE,
+    )(lambda: cdd_converters.SoundFileToPulse().convert(chapter.constants.SOUND_FILE))()
 
     panning_to_mutated_panning_dynamic_choice = core_generators.DynamicChoice(
         [
@@ -41,8 +45,11 @@ def get_resonator_melody_pair_0(
             [0.65, 1],
             [0.69, 0.7],
             [0.75, 0.6],
-            [0.9, 0.95],
-            [0.975, 0.93],
+            [0.8, 0.56],
+            [0.84, 0.62],
+            [0.87, 0.95],
+            [0.9, 0.5],
+            [0.975, 0.43],
             [1, 0.5],
         ]
     )
@@ -62,7 +69,7 @@ def get_resonator_melody_pair_0(
                 [0.8, 5],
                 [0.82, 1],
                 [0.9, 15],
-                [1, 20],
+                [1, 10],
             ]
         ),
         core_events.Envelope(
@@ -78,7 +85,7 @@ def get_resonator_melody_pair_0(
                 [0.8, 18],
                 [0.85, 25],
                 [0.9, 18],
-                [1, 32],
+                [1, 22],
             ]
         ),
     )
@@ -93,14 +100,16 @@ def get_resonator_melody_pair_0(
             [0.5, 0.9],
             [0.6, 0.5],
             [0.7, 0.7],
-            [0.8, 0.95],
+            [0.8, 0.85],
+            [0.84, 0.75],
+            [0.94, 0.65],
             [1, 1],
         ]
     )
     # For initial register and this also the allowed register range!
     register_tendency: common_generators.Tendency = common_generators.Tendency(
         core_events.Envelope(
-            [[0, 0], [0.35, 0], [0.4, -1], [0.6, -1], [0.65, 0], [0.785, -1], [1, -1]]
+            [[0, 0], [0.35, 0], [0.4, -1], [0.6, -1], [0.65, -2], [0.785, -1], [1, -1]]
         ),
         core_events.Envelope(
             [
@@ -162,7 +171,14 @@ def get_resonator_melody_pair_0(
                 [0.45, 50],
                 [0.5, 100],
                 [0.525, 34],
-                [0.6, 24],
+                [0.6, 190],
+                [0.64, 300],
+                [0.68, 50],
+                [0.72, 30],
+                [0.77, 120],
+                [0.82, 120],
+                [0.85, 20],
+                [0.92, 20],
                 [1, 50],
             ]
         ),
@@ -176,7 +192,15 @@ def get_resonator_melody_pair_0(
                 [0.45, 600],
                 [0.5, 600],
                 [0.525, 70],
-                [0.6, 43],
+                [0.6, 200],
+                [0.64, 350],
+                [0.68, 60],
+                [0.72, 40],
+                [0.77, 300],
+                [0.82, 1500],
+                [0.85, 500],
+                [0.87, 50],
+                [0.92, 400],
                 [1, 100],
             ]
         ),
@@ -191,9 +215,18 @@ def get_resonator_melody_pair_0(
                 [0.3, 100],
                 [0.45, 250],
                 [0.53, 70],
-                [0.6, 25],
-                [0.8, 25],
-                [1, 22],
+                [0.58, 25],
+                [0.6, 250],
+                [0.65, 250],
+                [0.69, 50],
+                [0.73, 40],
+                [0.79, 400],
+                [0.82, 205],
+                [0.85, 25],
+                [0.87, 15],
+                [0.9, 25],
+                [0.92, 200],
+                [1, 82],
             ]
         ),
         core_events.Envelope(
@@ -205,19 +238,36 @@ def get_resonator_melody_pair_0(
                 [0.3, 200],
                 [0.45, 700],
                 [0.53, 100],
-                [0.6, 40],
-                [0.8, 40],
-                [1, 80],
+                [0.58, 30],
+                [0.6, 260],
+                [0.65, 251],
+                [0.69, 53],
+                [0.73, 200],
+                [0.79, 800],
+                [0.82, 1300],
+                [0.85, 50],
+                [0.87, 80],
+                [0.9, 30],
+                [0.92, 500],
+                [1, 200],
             ]
         ),
     )
 
     resampled_spectral_centroid_envelope_tuple = cdd_converters.ResampledEnvelopeTuple(
-        chapter.constants.MONO_SOUND_FILE_COLLECTION, "spectral_centroid_envelope", 0, 1
+        chapter.constants.MONO_SOUND_FILE_COLLECTION,
+        "spectral_centroid_envelope",
+        0,
+        1,
+        force_to_compute=COMPUTE_ENVELOPE_TUPLE,
     )
 
     resampled_spectral_contrast_envelope_tuple = cdd_converters.ResampledEnvelopeTuple(
-        chapter.constants.MONO_SOUND_FILE_COLLECTION, "spectral_contrast_envelope", 5, 1
+        chapter.constants.MONO_SOUND_FILE_COLLECTION,
+        "spectral_contrast_envelope",
+        10,
+        1,
+        force_to_compute=COMPUTE_ENVELOPE_TUPLE,
     )
 
     pulse_pair = cdd_converters.PulseToComplementaryPulsePair().convert(pulse)
@@ -290,8 +340,8 @@ def get_resonator_melody_pair_1(
             [0.65, 1],
             [0.69, 0.7],
             [0.75, 0.6],
-            [0.9, 0.95],
-            [0.975, 0.93],
+            [0.9, 0.5],
+            [0.975, 0.3],
             [1, 0.5],
         ]
     )
@@ -305,13 +355,13 @@ def get_resonator_melody_pair_1(
                 [0.3, 4],
                 [0.4, 3],
                 [0.5, 5],
-                [0.52, 12],
+                [0.52, 1],
                 [0.6, 4],
-                [0.7, 15],
+                [0.7, 3],
                 [0.8, 5],
                 [0.82, 1],
-                [0.9, 15],
-                [1, 20],
+                [0.9, 4],
+                [1, 2],
             ]
         ),
         core_events.Envelope(
@@ -323,11 +373,11 @@ def get_resonator_melody_pair_1(
                 [0.5, 12],
                 [0.52, 14],
                 [0.6, 8],
-                [0.7, 22],
-                [0.8, 18],
-                [0.85, 25],
-                [0.9, 18],
-                [1, 32],
+                [0.7, 10],
+                [0.8, 6],
+                [0.85, 4],
+                [0.9, 7],
+                [1, 4],
             ]
         ),
     )
@@ -338,15 +388,15 @@ def get_resonator_melody_pair_1(
             [0.45, 0],
             [0.5, 0.2],
             [0.6, 0.5],
-            [0.7, 0.8],
-            [0.8, 0.9],
-            [1, 0.85],
+            [0.7, 0.7],
+            [0.8, 0.6],
+            [1, 0.74],
         ]
     )
     # For initial register and this also the allowed register range!
     register_tendency: common_generators.Tendency = common_generators.Tendency(
         core_events.Envelope(
-            [[0, 0], [0.4, -1], [0.6, 0], [0.65, -1], [0.785, 0], [1, 0]]
+            [[0, 0], [0.4, -1], [0.6, 0], [0.65, -1], [0.785, -2], [1, -2]]
         ),
         core_events.Envelope(
             [
@@ -463,7 +513,10 @@ def get_resonator_melody_pair_1(
     )
 
     resampled_spectral_contrast_envelope_tuple = cdd_converters.ResampledEnvelopeTuple(
-        chapter.constants.MONO_SOUND_FILE_COLLECTION, "spectral_contrast_envelope", 5, 1
+        chapter.constants.MONO_SOUND_FILE_COLLECTION,
+        "spectral_contrast_envelope",
+        10,
+        1,
     )
 
     pulse_pair = cdd_converters.PulseToComplementaryPulsePair().convert(pulse)

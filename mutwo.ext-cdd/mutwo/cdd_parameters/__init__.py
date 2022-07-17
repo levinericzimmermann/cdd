@@ -4,6 +4,7 @@ from .playing_indicators import *
 from .abjad_attachments import *
 from .sound_files import *
 from .pannings import *
+from .audio_scores import *
 
 # set mutwo default values
 

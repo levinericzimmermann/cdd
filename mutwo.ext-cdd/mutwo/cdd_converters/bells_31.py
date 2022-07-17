@@ -356,7 +356,7 @@ class BellSequentialEventToBellCsoundSequentialEvent(
                 panning_end=event_to_convert.panning_end,
                 filter_frequency=filter_frequency,
                 convolution_reverb_mix=core_utilities.scale(
-                    event_to_convert.distance, 0, 1, 0.015, 0.4
+                    event_to_convert.distance, 0, 1, 0.005, 0.3
                 ),
             )
         else:
