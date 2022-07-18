@@ -1,0 +1,12 @@
+{% macro load() %}
+
+    [configure.module.amplification.soprano]
+    audio_input = "audio_input.soprano"
+
+{% endmacro %}
+
+{% macro channel_mapping() %}
+            0 = 0
+{% endmacro %}
+
+{% set mixer_input_list = ["amplification.soprano"] %}

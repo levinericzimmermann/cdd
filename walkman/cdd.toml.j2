@@ -1,0 +1,137 @@
+{% from 'globals.j2' import
+    midi_channel,
+    midi_control_number_offset,
+    midi_control_name_list,
+    input_name_list,
+    volume_control_minima,
+    volume_control_maxima,
+    mixer_name_list,
+    channel_count,
+    output_channel_mapping,
+    input_channel_count
+%}
+
+[configure]
+name = "cdd"
+
+[configure.audio]
+channel_count = {{ input_channel_count }}
+
+
+## MIDI CONTROL
+
+{% for midi_control_name in midi_control_name_list %}
+
+    [configure.module.midi_control_input.{{ midi_control_name }}]
+    midi_control_number = {{ midi_control_number_offset + loop.index - 1 }}
+    midi_channel = {{ midi_channel }}
+
+    [configure.module.midi_control_input.{{ midi_control_name }}.default_dict]
+    minima = {{ volume_control_minima }}
+    maxima = {{ volume_control_maxima }}
+
+{% endfor %}
+
+
+## AUDIO INPUT
+
+{% for input_name in input_name_list %}
+
+    [configure.module.audio_input.{{ input_name }}]
+    input_channel_index = {{ loop.index - 1 }}
+
+{% endfor %}
+
+
+## DSP
+
+{% import 'dsp/tuning-fork-left.toml.j2' as tuning_fork_left %}
+{% import 'dsp/tuning-fork-right.toml.j2' as tuning_fork_right %}
+{% import 'dsp/clarinet.toml.j2' as clarinet %}
+{% import 'dsp/clavichord.toml.j2' as clavichord %}
+{% import 'dsp/soprano.toml.j2' as soprano %}
+{% import 'dsp/monochord-ebow.toml.j2' as monochord_ebow %}
+{% import 'dsp/monochord-hammer.toml.j2' as monochord_hammer %}
+{% import 'dsp/tape.toml.j2' as tape %}
+
+{% set mixer_name_to_dsp_module = {
+    "tuning-fork-left": tuning_fork_left,
+    "tuning-fork-right": tuning_fork_right,
+    "clavichord": clavichord,
+    "clarinet": clarinet,
+    "soprano": soprano,
+    "monochord-ebow": monochord_ebow,
+    "monochord-hammer": monochord_hammer,
+    "tape": tape
+} %}
+
+{% for dsp_module in [
+    monochord_ebow, monochord_hammer, tape, soprano, clarinet, clavichord, tuning_fork_right, tuning_fork_left
+] %}
+    {{ dsp_module.load() }}
+{% endfor %}
+
+
+## MIXER
+
+{% for mixer_name in mixer_name_list %}
+
+    {% set mixer_name_index = loop.index - 1 %}
+
+    [configure.module.mixer.{{ mixer_name }}]
+    decibel = "midi_control_input.{{ mixer_name }}"
+
+    {% if mixer_name == "master" %}
+
+        send_to_physical_output = true
+
+        {# ADD AUDIO INPUTS TO MASTER #}
+
+        {% for inner_mixer_name in mixer_name_list %}
+            {% if loop.index > 1 %}
+                audio_input_{{ loop.index - 2 }} = "mixer.{{ inner_mixer_name }}"
+            {% endif %}
+        {% endfor %}
+
+
+        {% for inner_mixer_name in mixer_name_list %}
+            {% if loop.index > 1 %}
+                [configure.module.mixer.{{ mixer_name }}.default_dict.audio_input_{{ loop.index - 2 }}_channel_mapping]
+                {% for channel_index in range(channel_count) %}
+                    {{ channel_index }} = {{ channel_index }}
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+
+        [configure.module.mixer.{{ mixer_name }}.channel_mapping]
+        # THIS IS THE OUTPUT CHANNEL MAPPING
+        {{ output_channel_mapping() }}
+
+    {% else %}
+
+        {% set dsp_module = mixer_name_to_dsp_module[mixer_name] %}
+        {% set master_mixer_input_index = mixer_name_index - 1 %}
+
+        {% for audio_input_name in dsp_module.mixer_input_list %}
+            audio_input_{{ loop.index - 1 }} = "{{ audio_input_name }}"
+        {% endfor %}
+
+        [configure.module.mixer.{{ mixer_name }}.channel_mapping]
+        {% for channel_index in range(channel_count) %}
+            {{ channel_index }} = {{ channel_index }}
+        {% endfor %}
+
+        {% if dsp_module.channel_mapping %}
+
+            [configure.module.mixer.{{ mixer_name }}.default_dict.audio_input_{{- master_mixer_input_index -}}_channel_mapping]
+            {{ dsp_module.channel_mapping() }}
+
+        {% endif %}
+
+    {% endif %}
+
+{% endfor %}
+
+
+{% include "cues/31.toml.j2" %}
+{% include "cues/12.toml.j2" %}

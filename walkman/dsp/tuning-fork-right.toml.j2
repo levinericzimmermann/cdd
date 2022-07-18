@@ -1,0 +1,12 @@
+{% macro load() %}
+
+    [configure.module.amplification.tuning-fork-right]
+    audio_input = "audio_input.tuning-fork-right"
+
+{% endmacro %}
+
+{% macro channel_mapping() %}
+            0 = [2, 3]
+{% endmacro %}
+
+{% set mixer_input_list = ["amplification.tuning-fork-right"] %}

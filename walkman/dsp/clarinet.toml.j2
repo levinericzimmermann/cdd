@@ -1,0 +1,12 @@
+{% macro load() %}
+
+    [configure.module.amplification.clarinet]
+    audio_input = "audio_input.clarinet"
+
+{% endmacro %}
+
+{% macro channel_mapping() %}
+            0 = 1
+{% endmacro %}
+
+{% set mixer_input_list = ["amplification.clarinet"] %}

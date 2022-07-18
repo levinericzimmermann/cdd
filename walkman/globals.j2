@@ -1,0 +1,32 @@
+{# SET MIDI DATA #}
+{% set midi_channel = 0 %}
+{% set midi_control_number_offset = 48 %}
+
+{% set volume_control_minima = -48 %}
+{% set volume_control_maxima = 12 %}
+
+{% set channel_count = 5 %}
+
+{# THIS IS ALSO THE INPUT ORDER #}
+{% set input_name_list = [
+    "soprano",
+    "clarinet",
+    "clavichord",
+    "monochord-ebow",
+    "monochord-hammer",
+    "tuning-fork-left",
+    "tuning-fork-right"
+] %}
+
+{% set input_channel_count = input_name_list|length %}
+
+{% set midi_control_name_list = ["master"] + input_name_list + ["tape"] %}
+{% set mixer_name_list = midi_control_name_list %}
+
+{% macro output_channel_mapping() %}
+        0 = 0
+        1 = 1
+        2 = 2
+        3 = 3
+        4 = 4
+{% endmacro %}

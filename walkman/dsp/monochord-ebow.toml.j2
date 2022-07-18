@@ -1,0 +1,15 @@
+{% macro load() %}
+
+    [configure.module.butterworth_lowpass_filter.monochord-ebow]
+    audio_input = "audio_input.monochord-ebow"
+
+    [configure.module.value.butterworth_lowpass_filter_monochord-ebow_child_frequency]
+    value = 5000
+
+{% endmacro %}
+
+{% macro channel_mapping() %}
+            0 = [2, 3]
+{% endmacro %}
+
+{% set mixer_input_list = ["butterworth_lowpass_filter.monochord-ebow"] %}
