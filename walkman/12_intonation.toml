@@ -1,56 +1,57 @@
+[configure]
 name = "12_intonation"
 
-[soundfile.intonation-0]
+[configure.output.channel_mapping]
+0 = [0, 1, 2, 3]
+
+[cue.intonation-0.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_0.wav"
 decibel = -25
 
-[soundfile.intonation-1]
+[cue.intonation-1.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_1.wav"
 decibel = -25
 
-[soundfile.intonation-2]
+[cue.intonation-2.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_2.wav"
 decibel = -20
 
-[soundfile.intonation-3]
+[cue.intonation-3.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_3.wav"
 decibel = -20
 
-[soundfile.intonation-4]
+[cue.intonation-4.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_4.wav"
 decibel = -20
 
-[soundfile.intonation-5]
+[cue.intonation-5.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_5.wav"
 decibel = -20
 
-[soundfile.intonation-6]
+[cue.intonation-6.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_6.wav"
 decibel = -20
 
-[soundfile.intonation-7]
+[cue.intonation-7.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_7.wav"
 decibel = -20
 
-[soundfile.intonation-8]
+[cue.intonation-8.sound_file_player.0]
 decibel = -20
 path = "tapes/12_intonation/12_intonation_8.wav"
 
-[soundfile.intonation-9]
+[cue.intonation-9.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_9.wav"
 decibel = -20
 
-[soundfile.intonation-10]
+[cue.intonation-10.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_10.wav"
 decibel = -20
 
-[soundfile.intonation-11]
+[cue.intonation-11.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_11.wav"
 decibel = -20
 
-[soundfile.intonation-12]
+[cue.intonation-12.sound_file_player.0]
 path = "tapes/12_intonation/12_intonation_12.wav"
 decibel = -20
-
-[audio.channel_mapping]
-0 = [0, 1, 2, 3]
