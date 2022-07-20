@@ -1,8 +1,30 @@
-[cue.12.sound_file_player.tape]
+[cue.12-1.sound_file_player.tape-4-channel]
 path = "tapes/12_cdd.wav"
 
-[cue.12.amplification.soprano]
+{% set transposition_list_list = [
+    [0]
+] %}
 
-[cue.12.amplification.clarinet]
+{% for transposition_list in transposition_list_list %}
 
-[cue.12.amplification.clavichord]
+    {% set cue_name = "12-" + (loop.index | string) %}
+
+    [cue.{{ cue_name }}.harmonizer.clavichord]
+    transposition_list = {{ transposition_list }}
+
+    [cue.{{ cue_name }}.butterworth_highpass_filter.soprano]
+
+    [cue.{{ cue_name }}.butterworth_highpass_filter.clarinet]
+
+    # Okay I think the problem is here, perhaps the mixer assumes that
+    # the audio input is important and therefore autostart the related module.
+    # [cue.{{ cue_name }}.mixer.tape]
+
+    # [cue.{{ cue_name }}.value.sound_file_player_tape-4-channel_child_decibel]
+
+    # [cue.{{ cue_name }}.sound_file_player]
+    # # Explicitly stop tape player for composition 31 (should auto stop, this is a bug in walkman)
+    # tape-6-channel = false
+
+
+{% endfor %}

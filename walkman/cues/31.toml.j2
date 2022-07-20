@@ -1,12 +1,16 @@
-[cue.31.sound_file_player.tape]
+[cue.31.sound_file_player]
+# Explicitly stop tape player for composition 12 (because it has auto_stop=false)
+tape-4-channel = false
+
+[cue.31.sound_file_player.tape-6-channel]
 path = "tapes/31_tape.wav"
 
 [cue.31.butterworth_lowpass_filter.monochord-ebow]
 
 [cue.31.butterworth_lowpass_filter.monochord-hammer]
 
-[cue.31.amplification.tuning-fork-right]
+[cue.31.butterworth_highpass_filter.tuning-fork-right]
 
-[cue.31.amplification.tuning-fork-left]
+[cue.31.butterworth_highpass_filter.tuning-fork-left]
 
-[cue.31.amplification.soprano]
+[cue.31.butterworth_highpass_filter.soprano]

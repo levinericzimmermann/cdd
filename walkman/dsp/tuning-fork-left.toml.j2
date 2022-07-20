@@ -1,12 +1,17 @@
 {% macro load() %}
 
-    [configure.module.amplification.tuning-fork-left]
+    [configure.module.butterworth_highpass_filter.tuning-fork-left]
     audio_input = "audio_input.tuning-fork-left"
 
+    [configure.module.value.butterworth_highpass_filter_tuning-fork-left_child_frequency]
+    value = 350
+
 {% endmacro %}
+
+{% set mixer_input_list = ["butterworth_highpass_filter.tuning-fork-left"] %}
 
 {% macro channel_mapping() %}
-            0 = [1, 2]
+                0 = [1, 2]
 {% endmacro %}
 
-{% set mixer_input_list = ["amplification.tuning-fork-left"] %}
+{% set mixer_input_channel_mapping_list = [channel_mapping()] %}

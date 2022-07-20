@@ -1,12 +1,14 @@
 {% macro load() %}
 
-    [configure.module.amplification.clavichord]
+    [configure.module.harmonizer.clavichord]
     audio_input = "audio_input.clavichord"
 
 {% endmacro %}
 
+{% set mixer_input_list = ["harmonizer.clavichord"] %}
+
 {% macro channel_mapping() %}
-            0 = 2
+                0 = 0
 {% endmacro %}
 
-{% set mixer_input_list = ["amplification.clavichord"] %}
+{% set mixer_input_channel_mapping_list = [channel_mapping()] %}

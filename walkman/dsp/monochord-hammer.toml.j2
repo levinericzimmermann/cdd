@@ -8,8 +8,11 @@
 
 {% endmacro %}
 
-{% macro channel_mapping() %}
-            0 = [2, 3]
-{% endmacro %}
 
 {% set mixer_input_list = ["butterworth_lowpass_filter.monochord-hammer"] %}
+
+{% macro channel_mapping() %}
+                0 = [2, 3]
+{% endmacro %}
+
+{% set mixer_input_channel_mapping_list = [channel_mapping()] %}

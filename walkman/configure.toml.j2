@@ -121,10 +121,14 @@ channel_count = {{ input_channel_count }}
             {{ channel_index }} = {{ channel_index }}
         {% endfor %}
 
-        {% if dsp_module.channel_mapping %}
+        {% if dsp_module.mixer_input_channel_mapping_list %}
 
-            [configure.module.mixer.{{ mixer_name }}.default_dict.audio_input_{{- master_mixer_input_index -}}_channel_mapping]
-            {{ dsp_module.channel_mapping() }}
+            {% for mixer_input_channel_mapping in dsp_module.mixer_input_channel_mapping_list %}
+
+                [configure.module.mixer.{{ mixer_name }}.default_dict.audio_input_{{- loop.index - 1 -}}_channel_mapping]
+                {{ mixer_input_channel_mapping }}
+
+            {% endfor %}
 
         {% endif %}
 

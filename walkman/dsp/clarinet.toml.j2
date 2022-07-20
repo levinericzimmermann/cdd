@@ -1,12 +1,18 @@
 {% macro load() %}
 
-    [configure.module.amplification.clarinet]
+    [configure.module.butterworth_highpass_filter.clarinet]
     audio_input = "audio_input.clarinet"
 
+    [configure.module.value.butterworth_highpass_filter_clarinet_child_frequency]
+    value = 180
+
 {% endmacro %}
+
+{% set mixer_input_list = ["butterworth_highpass_filter.clarinet"] %}
+
 
 {% macro channel_mapping() %}
-            0 = 1
+                0 = 1
 {% endmacro %}
 
-{% set mixer_input_list = ["amplification.clarinet"] %}
+{% set mixer_input_channel_mapping_list = [channel_mapping()] %}

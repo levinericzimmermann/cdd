@@ -1,8 +1,33 @@
 from __future__ import annotations
+import typing
 
 import pyo
 
 import walkman
+
+
+class Harmonizer(
+    walkman.ModuleWithDecibel,
+    audio_input=walkman.Catch(walkman.constants.EMPTY_MODULE_INSTANCE_NAME),
+):
+    def _setup_pyo_object(
+        self,
+    ):
+        super()._setup_pyo_object()
+        self.harmonizer = pyo.Harmonizer(
+            self.audio_input.pyo_object, transpo=0, mul=self.amplitude_signal_to
+        )
+        self.internal_pyo_object_list.append(self.harmonizer)
+
+    def _initialise(
+        self, transposition_list: typing.Union[typing.List[float], float] = 0, **kwargs
+    ):
+        self.harmonizer.setTranspo(transposition_list)
+        super()._initialise(**kwargs)
+
+    @property
+    def _pyo_object(self) -> pyo.PyoObject:
+        return self.harmonizer
 
 
 class CrossSynthesis(

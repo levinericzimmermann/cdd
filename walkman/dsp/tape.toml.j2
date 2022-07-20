@@ -1,22 +1,40 @@
 {% macro load() %}
 
-    [configure.module.sound_file_player.tape]
+    [configure.module.sound_file_player.tape-6-channel]
     channel_count = 6
 
     # Needs to be provided, otherwise walkman raises an exception.
     # (this may be a bug, but I think it's because pyo sound file player
     #  needs a path at initialization time).
-    [configure.module.sound_file_player.tape.default_dict]
+    [configure.module.sound_file_player.tape-6-channel.default_dict]
     path = "tapes/31_tape.wav"
 
+    [configure.module.sound_file_player.tape-4-channel]
+    channel_count = 4
+    auto_stop = false
+
+    [configure.module.sound_file_player.tape-4-channel.default_dict]
+    path = "tapes/12_cdd.wav"
+
 {% endmacro %}
 
-{% macro channel_mapping() %}
-            0 = 0
-            1 = 1
-            2 = 2
-            3 = 3
-            4 = 4
+
+{% set mixer_input_list = ["sound_file_player.tape-6-channel", "sound_file_player.tape-4-channel"] %}
+
+
+{% macro channel_mapping_6() %}
+                0 = 0
+                1 = 1
+                2 = 2
+                3 = 3
+                4 = 4
 {% endmacro %}
 
-{% set mixer_input_list = ["sound_file_player.tape"] %}
+
+{% macro channel_mapping_4() %}
+                0 = 2
+                1 = 1
+                2 = 0
+{% endmacro %}
+
+{% set mixer_input_channel_mapping_list = [channel_mapping_6(), channel_mapping_4()] %}

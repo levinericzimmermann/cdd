@@ -1,12 +1,17 @@
 {% macro load() %}
 
-    [configure.module.amplification.soprano]
+    [configure.module.butterworth_highpass_filter.soprano]
     audio_input = "audio_input.soprano"
 
+    [configure.module.value.butterworth_highpass_filter_soprano_child_frequency]
+    value = 180
+
 {% endmacro %}
+
+{% set mixer_input_list = ["butterworth_highpass_filter.soprano"] %}
 
 {% macro channel_mapping() %}
-            0 = 0
+                0 = 2
 {% endmacro %}
 
-{% set mixer_input_list = ["amplification.soprano"] %}
+{% set mixer_input_channel_mapping_list = [channel_mapping()] %}
