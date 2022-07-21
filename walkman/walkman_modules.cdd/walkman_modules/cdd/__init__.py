@@ -1,9 +1,95 @@
 from __future__ import annotations
+import random
 import typing
 
 import pyo
 
 import walkman
+
+
+def get_dynamic_panning(
+    audio_input: pyo.PyoObject,
+    lfo_frequency: float = 0.2,
+    lfo_type: int = 0,
+    channel_count: int = 4,
+) -> typing.Tuple[pyo.PyoObject, typing.List[pyo.PyoObject]]:
+    lfo = pyo.LFO(lfo_frequency, mul=0.5, add=1, type=lfo_type)
+    panner = pyo.Pan(audio_input, outs=channel_count, spread=lfo)
+    return panner, [panner, lfo]
+
+
+class MonochordEbow(
+    walkman.ModuleWithDecibel,
+    audio_input=walkman.Catch(walkman.constants.EMPTY_MODULE_INSTANCE_NAME),
+):
+    def _setup_pyo_object(
+        self,
+    ):
+        super()._setup_pyo_object()
+        self.feedback = 0.1
+        self.min_delay_time = 1 / 44100
+        self.max_delay_time = 1.5
+        self.delay_time_factor = self.max_delay_time - self.min_delay_time
+
+        def pyo_object_to_delay_time(pyo_object: pyo.PyoObject) -> pyo.PyoObject:
+            pyo_object.setMul(0.5)
+            pyo_object.setAdd(1)
+            return (pyo_object * self.delay_time_factor) + self.min_delay_time
+
+        self.delay_time_list = [
+            pyo_object_to_delay_time(pyo_object)
+            for pyo_object in [
+                pyo.LFO(freq=0.15, type=7),
+                pyo.LFO(freq=0.23, type=0),
+                pyo.LFO(freq=0.17, type=3),
+            ]
+        ]
+
+        self.delay = pyo.Delay(
+            self.audio_input.pyo_object,
+            delay=self.delay_time_list,
+            maxdelay=self.max_delay_time,
+            feedback=self.feedback,
+        )
+
+        internal_pyo_object_list = [self.delay]
+        self.panning_list = []
+        for delay_index, _ in enumerate(self.delay_time_list):
+            lfo_frequency = random.uniform(0.1, 0.9)
+            lfo_type = random.choice([0, 1, 3])
+            panning, new_internal_pyo_object_list = get_dynamic_panning(
+                self.delay[delay_index], lfo_frequency=lfo_frequency, lfo_type=lfo_type
+            )
+            internal_pyo_object_list.extend(new_internal_pyo_object_list)
+            self.panning_list.append(panning)
+
+        self.panning = sum(self.panning_list)
+        internal_pyo_object_list.append(self.panning)
+        self.internal_pyo_object_list.extend(internal_pyo_object_list)
+
+    @property
+    def _pyo_object(self) -> pyo.PyoObject:
+        return self.panning
+
+
+class MonochordHammer(
+    walkman.ModuleWithDecibel,
+    audio_input=walkman.Catch(walkman.constants.EMPTY_MODULE_INSTANCE_NAME),
+):
+    def _setup_pyo_object(
+        self,
+    ):
+        super()._setup_pyo_object()
+        self.drive = 0.1
+        self.slope = 0.3
+        self.distortion = pyo.Disto(
+            self.audio_input.pyo_object, drive=self.drive, mul=self.amplitude_signal_to, slope=self.slope
+        )
+        self.internal_pyo_object_list.append(self.distortion)
+
+    @property
+    def _pyo_object(self) -> pyo.PyoObject:
+        return self.distortion
 
 
 class Harmonizer(

@@ -6,9 +6,12 @@
     [configure.module.value.butterworth_highpass_filter_tuning-fork-left_child_frequency]
     value = 350
 
+    [configure.module.harmonizer.tuning-fork-left]
+    audio_input = "butterworth_highpass_filter.tuning-fork-left"
+
 {% endmacro %}
 
-{% set mixer_input_list = ["butterworth_highpass_filter.tuning-fork-left"] %}
+{% set mixer_input_list = ["harmonizer.tuning-fork-left"] %}
 
 {% macro channel_mapping() %}
                 0 = [1, 2]

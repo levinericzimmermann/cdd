@@ -6,10 +6,13 @@
     [configure.module.value.butterworth_lowpass_filter_monochord-hammer_child_frequency]
     value = 5000
 
+    [configure.module.monochord_hammer.monochord-hammer]
+    audio_input = "butterworth_lowpass_filter.monochord-hammer"
+
 {% endmacro %}
 
 
-{% set mixer_input_list = ["butterworth_lowpass_filter.monochord-hammer"] %}
+{% set mixer_input_list = ["monochord_hammer.monochord-hammer"] %}
 
 {% macro channel_mapping() %}
                 0 = [2, 3]

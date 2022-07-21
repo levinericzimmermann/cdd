@@ -1,16 +1,23 @@
-[cue.31.sound_file_player]
-# Explicitly stop tape player for composition 12 (because it has auto_stop=false)
-tape-4-channel = false
+# When people enter the room there is already a tape running in a loop.
+[cue.31-loop.sound_file_player.tape-loop-6-channel]
+path = "tapes/31_loop_tape.wav"
+loop = true
+
+# With this cue the 'actual' piece starts, with this
+# the cue for the performer starts.
+[cue.31.sound_file_player.tape-1-cue]
+path = "tapes/31_cue_tape.wav"
 
 [cue.31.sound_file_player.tape-6-channel]
 path = "tapes/31_tape.wav"
 
-[cue.31.butterworth_lowpass_filter.monochord-ebow]
+[cue.31.monochord_ebow.monochord-ebow]
 
 [cue.31.butterworth_lowpass_filter.monochord-hammer]
 
 [cue.31.butterworth_highpass_filter.tuning-fork-right]
 
-[cue.31.butterworth_highpass_filter.tuning-fork-left]
+[cue.31.harmonizer.tuning-fork-left]
+transposition_list = [-7]
 
 [cue.31.butterworth_highpass_filter.soprano]

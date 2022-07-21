@@ -6,12 +6,25 @@
     [configure.module.value.butterworth_lowpass_filter_monochord-ebow_child_frequency]
     value = 5000
 
+    [configure.module.butterworth_highpass_filter.monochord-ebow]
+    audio_input = "butterworth_lowpass_filter.monochord-ebow"
+
+    [configure.module.value.butterworth_highpass_filter_monochord-ebow_child_frequency]
+    value = 70
+
+    [configure.module.monochord_ebow.monochord-ebow]
+    audio_input = "butterworth_highpass_filter.monochord-ebow"
+
 {% endmacro %}
 
-{% set mixer_input_list = ["butterworth_lowpass_filter.monochord-ebow"] %}
+
+{% set mixer_input_list = ["monochord_ebow.monochord-ebow"] %}
 
 {% macro channel_mapping() %}
-                0 = [2, 3]
+                0 = 0
+                1 = 1
+                2 = 2
+                3 = 3
 {% endmacro %}
 
 {% set mixer_input_channel_mapping_list = [channel_mapping()] %}

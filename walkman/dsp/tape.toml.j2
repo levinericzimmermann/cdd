@@ -2,6 +2,7 @@
 
     [configure.module.sound_file_player.tape-6-channel]
     channel_count = 6
+    fade_in_duration = 30
 
     # Needs to be provided, otherwise walkman raises an exception.
     # (this may be a bug, but I think it's because pyo sound file player
@@ -9,9 +10,23 @@
     [configure.module.sound_file_player.tape-6-channel.default_dict]
     path = "tapes/31_tape.wav"
 
+    [configure.module.sound_file_player.tape-loop-6-channel]
+    channel_count = 6
+    fade_out_duration = 30
+
+    [configure.module.sound_file_player.tape-loop-6-channel.default_dict]
+    path = "tapes/31_loop_tape.wav"
+
+    [configure.module.sound_file_player.tape-1-cue]
+    channel_count = 1
+    fade_in_duration = 0.0001
+    fade_out_duration = 0.0001
+
+    [configure.module.sound_file_player.tape-1-cue.default_dict]
+    path = "tapes/31_cue_tape.wav"
+
     [configure.module.sound_file_player.tape-4-channel]
     channel_count = 4
-    auto_stop = false
 
     [configure.module.sound_file_player.tape-4-channel.default_dict]
     path = "tapes/12_cdd.wav"
@@ -19,7 +34,12 @@
 {% endmacro %}
 
 
-{% set mixer_input_list = ["sound_file_player.tape-6-channel", "sound_file_player.tape-4-channel"] %}
+{% set mixer_input_list = [
+    "sound_file_player.tape-6-channel",
+    "sound_file_player.tape-loop-6-channel",
+    "sound_file_player.tape-4-channel",
+    "sound_file_player.tape-1-cue"
+] %}
 
 
 {% macro channel_mapping_6() %}
@@ -37,4 +57,14 @@
                 2 = 0
 {% endmacro %}
 
-{% set mixer_input_channel_mapping_list = [channel_mapping_6(), channel_mapping_4()] %}
+
+{% macro channel_mapping_1() %}
+                0 = 4
+{% endmacro %}
+
+{% set mixer_input_channel_mapping_list = [
+    channel_mapping_6(),
+    channel_mapping_6(),
+    channel_mapping_4(),
+    channel_mapping_1()
+] %}
