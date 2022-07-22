@@ -25,6 +25,7 @@ channel_count = {{ input_channel_count }}
     [configure.module.midi_control_input.{{ midi_control_name }}]
     midi_control_number = {{ midi_control_number_offset + loop.index - 1 }}
     midi_channel = {{ midi_channel }}
+    initial_value = {{ volume_control_minima }}
 
     [configure.module.midi_control_input.{{ midi_control_name }}.default_dict]
     minima = {{ volume_control_minima }}
