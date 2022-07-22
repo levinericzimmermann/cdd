@@ -74,6 +74,10 @@ SOPRAN_WESTERN_PITCH_AMBITUS = music_parameters.OctaveAmbitus(
     music_parameters.WesternPitch("c", 4), music_parameters.WesternPitch("a", 5)
 )
 
+# XXX: Because our clavichord is tuned to 415 we have to transpose everything
+#      by a halftone.
+CLAVICHORD_TRANSPOSITION = music_parameters.DirectPitchInterval(100)
+
 
 CLAVICHORD_WESTERN_PITCH_AMBITUS = music_parameters.OctaveAmbitus(
     # music_parameters.WesternPitch("c", 3),
@@ -125,7 +129,7 @@ CLAVICHORD_PITCH_TO_TABULATURA_PITCH = cdd_converters.PitchToTabulaturaPitch(
     {
         clavichord_pitch.exponent_tuple: clavichord_just_intonation_pitch_to_clavichord_western_pitch(
             clavichord_pitch
-        )
+        ) + CLAVICHORD_TRANSPOSITION
         for clavichord_pitch in CLAVICHORD_PITCH_TUPLE
     }
 )
