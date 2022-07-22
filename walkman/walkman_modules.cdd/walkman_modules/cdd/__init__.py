@@ -31,19 +31,21 @@ class MonochordEbow(
         self.max_delay_time = 1.5
         self.delay_time_factor = self.max_delay_time - self.min_delay_time
 
-        def pyo_object_to_delay_time(pyo_object: pyo.PyoObject) -> pyo.PyoObject:
-            pyo_object.setMul(0.5)
-            pyo_object.setAdd(1)
-            return (pyo_object * self.delay_time_factor) + self.min_delay_time
+        # def pyo_object_to_delay_time(pyo_object: pyo.PyoObject) -> pyo.PyoObject:
+        #     pyo_object.setMul(0.5)
+        #     pyo_object.setAdd(1)
+        #     return (pyo_object * self.delay_time_factor) + self.min_delay_time
 
-        self.delay_time_list = [
-            pyo_object_to_delay_time(pyo_object)
-            for pyo_object in [
-                pyo.LFO(freq=0.15, type=7),
-                pyo.LFO(freq=0.23, type=0),
-                pyo.LFO(freq=0.17, type=3),
-            ]
-        ]
+        # self.delay_time_list = [
+        #     pyo_object_to_delay_time(pyo_object)
+        #     for pyo_object in [
+        #         pyo.LFO(freq=0.15, type=7),
+        #         pyo.LFO(freq=0.23, type=0),
+        #         pyo.LFO(freq=0.17, type=3),
+        #     ]
+        # ]
+
+        self.delay_time_list = [0.005, 0.03, 0.1]
 
         self.delay = pyo.Delay(
             self.audio_input.pyo_object,
