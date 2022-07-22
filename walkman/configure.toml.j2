@@ -66,9 +66,7 @@ channel_count = {{ input_channel_count }}
     "tape": tape
 } %}
 
-{% for dsp_module in [
-    monochord_ebow, monochord_hammer, tape, soprano, clarinet, clavichord, tuning_fork_right, tuning_fork_left
-] %}
+{% for dsp_module in mixer_name_to_dsp_module.values() %}
     {{ dsp_module.load() }}
 {% endfor %}
 
