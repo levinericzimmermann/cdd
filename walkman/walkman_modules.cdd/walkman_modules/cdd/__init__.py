@@ -82,7 +82,7 @@ class MonochordHammer(
         self,
     ):
         super()._setup_pyo_object()
-        self.drive = 0.1
+        self.drive = 0.45
         self.slope = 0.3
         self.distortion = pyo.Disto(
             self.audio_input.pyo_object, drive=self.drive, mul=self.amplitude_signal_to, slope=self.slope

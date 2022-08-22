@@ -899,6 +899,6 @@ def notate_noise(chapter: cdd.chapters.Chapter):
 
 
 def main(chapter: cdd.chapters.Chapter):
-    notate_soprano(chapter)
-    notate_clarinet(chapter)
-    # notate_clavichord(chapter)
+    # notate_soprano(chapter)
+    # notate_clarinet(chapter)
+    notate_clavichord(chapter)

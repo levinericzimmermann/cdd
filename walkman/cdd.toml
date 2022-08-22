@@ -1,0 +1,35 @@
+[configure]
+name = "cdd"
+
+[configure.output.channel_mapping]
+# first channel is reserved for electronic instrument ('aobjects')
+0 = 1
+1 = 2
+2 = 3
+# 3 is silent channel
+3 = 3
+
+[configure.module.sound_file_player.0]
+channel_count = 4
+
+[cue.6_1.sound_file_player.0]
+path = "tapes/6_cdd-tape-1.wav"
+decibel = -44
+
+[cue.6_2.sound_file_player.0]
+path = "tapes/6_cdd-tape-2.wav"
+decibel = -44
+
+[cue.12.sound_file_player.0]
+path = "tapes/12_cdd.wav"
+# decibel = -29
+decibel = -20
+
+[cue.146.sound_file_player.0]
+path = "tapes/146_cdd.wav"
+# decibel = -22
+decibel = -13
+
+[reverb]
+sound_file_path = "impulse-responses/Philipps-Quadrophonic.wav"
+decibel = -22
